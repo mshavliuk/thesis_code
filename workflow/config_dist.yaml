@@ -1,0 +1,18 @@
+# ==============================================================================
+# WARNING: This is a distribution version of the configuration file.
+# Please ensure you replace the placeholders with actual values before use.
+# ==============================================================================
+---
+google_project_id: 'see from `gcloud projects list`'
+
+mimic_files:
+  - 'CHARTEVENTS'
+  - 'INPUTEVENTS_CV'
+  - 'INPUTEVENTS_MV'
+  - 'ICUSTAYS'
+  - 'D_ITEMS'
+  - 'ADMISSIONS'
+  - 'LABEVENTS'
+  - 'PATIENTS'
+  - 'OUTPUTEVENTS'
+

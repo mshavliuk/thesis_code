@@ -1,0 +1,4 @@
+name: pyspark
+dependencies:
+  - python==3.12
+  - pyspark

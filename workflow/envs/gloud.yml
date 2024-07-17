@@ -1,0 +1,3 @@
+name: gloud
+dependencies:
+  - conda-forge::google-cloud-sdk

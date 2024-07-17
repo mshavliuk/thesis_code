@@ -1,0 +1,13 @@
+name: thesis_code
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.12
+  - bioconda::snakemake
+  - mamba
+  - pipenv
+  - pytorch
+  - pytorch-cuda=12.1
