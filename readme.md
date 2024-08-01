@@ -1,3 +1,14 @@
+# Setup
+```bash
+git clone ...
+cd ...
+echo "layout anaconda $(basename $(pwd))" > .envrc
+direnv allow
+# wait
+pipenv install --dev
+```
+
+
 # Useful Commands
 
 - `snakemake --use-conda --cores 10`: Run the workflow using Conda.

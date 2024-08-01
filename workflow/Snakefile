@@ -1,5 +1,3 @@
-import os
-
 from snakemake.io import (
     directory,
     expand,
@@ -11,16 +9,16 @@ configfile: "workflow/config.yaml"
 
 rule all:
     input:
-        expand("data/raw/{file}.parquet",file=config["mimic_files"])
+        expand("{data_dir}/raw/{file}.parquet",file=config["mimic_files"], data_dir=config["data_dir"])
 
 
 rule download_data:
     output:
-        temp("data/raw/{file}.csv.gz")
+        "{data_dir}/raw/{file}.csv.gz"
     conda:
         "envs/gloud.yml"
     params:
-        google_project_id=os.getenv("GOOGLE_PROJECT_ID")
+        google_project_id=config["google_project_id"]
     shell:
         "gsutil -u {params.google_project_id} cp gs://mimiciii-1.4.physionet.org/{wildcards.file}.csv.gz {output}"
 
@@ -29,13 +27,13 @@ rule convert_data_to_parquet:
     conda:
         "envs/pyspark.yml"
     input:
-        data="data/raw/{file}.csv.gz"
+        data="{config['data_dir']}/raw/{file}.csv.gz"
     output:
-        directory("data/raw/{file}.parquet")
+        directory("{config['data_dir']}/raw/{file}.parquet")
     log:
         stdout="logs/spark_convert_to_parquet_{file}.log",
         stderr="logs/spark_convert_to_parquet_{file}.log"
     shell:
         """
-        spark-submit scripts/csv_gz_to_parquet.py {input.data} {output} > {log.stdout} 2> {log.stderr}
+        spark-submit workflow/scripts/csv_gz_to_parquet.py {input.data} {output} > {log.stdout} 2> {log.stderr}
         """
