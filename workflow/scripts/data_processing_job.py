@@ -28,6 +28,14 @@ from workflow.scripts.data_extractor import DataExtractor
 
 
 class DataProcessingJob:
+    outputs = {
+        'mortality_labels': f'{Config.data_dir}/preprocessed/mortality_labels.pkl',
+        'events': f'{Config.data_dir}/preprocessed/events.parquet',
+        'train_stay_ids': f'{Config.data_dir}/preprocessed/train_stay_ids.npy',
+        'test_stay_ids': f'{Config.data_dir}/preprocessed/test_stay_ids.npy',
+        'val_stay_ids': f'{Config.data_dir}/preprocessed/val_stay_ids.npy',
+    }
+    
     def __init__(self, data_extractor: DataExtractor):
         self.data_extractor = data_extractor
         self.logger = logging.getLogger(__name__)
@@ -290,7 +298,7 @@ class DataProcessingJob:
         )
         return gender_events
     
-    def preprocess(self) -> DataFrame:
+    def run(self) -> DataFrame:
         features = get_features()
         raw_events = self.get_raw_events(features)
         feature_events = self.process_event_values(raw_events, features)
@@ -318,13 +326,13 @@ class DataProcessingJob:
         train_df, test_df, val_df = patient_ids.randomSplit([.64, .2, .16], seed=42)
         for df, name in zip([train_df, test_df, val_df], ['train', 'test', 'val']):
             (icu_stays_24h.join(df, on='patient_id', how='inner').select('stay_id')
-             .toPandas().to_numpy().dump(f'{Config.data_dir}/preprocessed/{name}_stay_ids.npy'))
+             .toPandas().to_numpy().dump(self.outputs[f'{name}_stay_ids']))
         patient_ids.unpersist()
     
     def save_mortality_labels(self, icu_stays_24h: DataFrame):
         # TODO: WHY not to store everything as parquets?
         mortality_labels = (icu_stays_24h.select('stay_id', 'died').toPandas())
-        mortality_labels.to_pickle(f'{Config.data_dir}/preprocessed/mortality_labels.pkl')
+        mortality_labels.to_pickle(self.outputs['mortality_labels'])
     
     def save_events(self, events: DataFrame):
         event_triplets = (events
@@ -335,4 +343,4 @@ class DataProcessingJob:
             F.col('group').alias('variable'),
         ))
         
-        event_triplets.write.mode('overwrite').parquet(f'{Config.data_dir}/preprocessed/events.parquet')
+        event_triplets.write.mode('overwrite').parquet(self.outputs['events'])

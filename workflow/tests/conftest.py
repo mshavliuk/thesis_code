@@ -5,6 +5,9 @@ from pyspark.sql import (SparkSession, )
 
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
+from workflow.scripts.latex_data_job import LatexDataJob
+from workflow.scripts.statistics_job import StatisticsJob
+
 
 @pytest.fixture(scope="session")
 def spark_checkpoint_dir():
@@ -35,3 +38,12 @@ def data_extractor(spark: SparkSession):
 @pytest.fixture(scope='module')
 def data_processing_job(data_extractor: DataExtractor):
     yield DataProcessingJob(data_extractor)
+
+
+@pytest.fixture(scope='module')
+def statistics_job(spark: SparkSession):
+    yield StatisticsJob(spark)
+
+@pytest.fixture(scope="module")
+def latex_data_job():
+    yield LatexDataJob()

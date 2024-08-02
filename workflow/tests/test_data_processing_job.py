@@ -157,4 +157,4 @@ class TestApplyFeatureSelectors:
 
 class TestPreprocess:
     def test_preprocess(self, obj: DataProcessingJob):
-        obj.preprocess()
+        obj.run()
