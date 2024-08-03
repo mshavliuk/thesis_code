@@ -81,16 +81,4 @@ class TestDataProcessingJob(unittest.TestCase):
         self.show(outliers.groupBy('value', 'unit', 'new_value').count())
     
     def test_preprocess(self):
-        self.data_reader.preprocess()
-    
-    # def test_compute_group_statistics(self):
-    #     events = self.data_reader.preprocess.get_cached_df(self.spark)
-    #     group_stat = self.data_reader.compute_group_statistics(events)
-    #     self.show(group_stat)
-    #     self.assertIsInstance(group_stat, DataFrame)
-    #
-    # def test_plot_patient_journeys(self):
-    #     events = self.data_reader.preprocess.get_cached_df(self.spark)
-    #     group_stat = self.spark.read.csv(
-    #         f'{Config.data_dir}/statistics/groups.csv', header=True, )
-    #     self.data_reader.plot_patient_journeys(events, group_stat)
+        self.data_reader.run()

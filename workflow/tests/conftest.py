@@ -6,6 +6,7 @@ from pyspark.sql import (SparkSession, )
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
 from workflow.scripts.latex_data_job import LatexDataJob
+from workflow.scripts.plotting_job import PlottingJob
 from workflow.scripts.statistics_job import StatisticsJob
 
 
@@ -47,3 +48,7 @@ def statistics_job(spark: SparkSession):
 @pytest.fixture(scope="module")
 def latex_data_job():
     yield LatexDataJob()
+
+@pytest.fixture(scope='module')
+def plotting_job(spark: SparkSession):
+    yield PlottingJob(spark)

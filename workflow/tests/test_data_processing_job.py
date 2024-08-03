@@ -5,6 +5,7 @@ from pyspark.sql import (
     functions as F,
 )
 
+from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
 from workflow.tests.conftest import data_processing_job
 
@@ -86,11 +87,11 @@ class TestProcessOutliers:
             (4, 1.0, dt, 'HR'),
             (5, 100.0, dt, 'HR'),
             (6, 300.0, dt, 'HR'),
-        ], ['code', 'value', 'time', 'group'])
+        ], ['code', 'value', 'time', 'variable'])
     
     def test_process_outliers(self, obj: DataProcessingJob, df, features):
         result = obj.process_outliers(df, features)
-        assert set(result.columns) == {'code', 'value', 'time', 'group'}
+        assert set(result.columns) == {'code', 'value', 'time', 'variable'}
         result_values = result.orderBy('code').rdd.map(lambda x: x.value).collect()
         assert result_values == [36.6, 37.1, 36.9, 100, 100, 100]
     
@@ -102,7 +103,7 @@ class TestProcessOutliers:
                                match="Filtering config for group Temperature should contain ..."):
                 obj.process_outliers(df, [config])
     
-    def test_distinct_config_for_same_group_raises_error(
+    def test_distinct_config_for_same_variable_raises_error(
         self,
         obj: DataProcessingJob,
         df,
@@ -115,7 +116,7 @@ class TestProcessOutliers:
         ]
         features[1]['min'] += 1
         with pytest.raises(ValueError,
-                           match="Filtering configs for group Temperature are different"):
+                           match="Filtering configs for variable Temperature are different"):
             obj.process_outliers(df, features)
 
 
@@ -145,12 +146,12 @@ class TestApplyFeatureSelectors:
             (678, 98.24, dt, 'Temperature'),
             (678, 97.88, dt, 'Temperature'),
             (678, 98.12, dt, 'Temperature'),
-        ], ['code', 'value', 'time', 'group'])
+        ], ['code', 'value', 'time', 'variable'])
     
     def test_with_colliding_group_names(self, obj: DataProcessingJob, df, features):
         result = obj.apply_feature_selectors(df, features)
         assert result.count() == 6
-        assert result.columns == ['code', 'value', 'time', 'group', 'feature_value']
+        assert result.columns == ['code', 'value', 'time', 'variable', 'feature_value']
         result_values = result.orderBy('code').rdd.map(lambda x: x.feature_value).collect()
         for expected, actual in zip([36.6, 37.1, 36.9, 36.8, 36.6, 36.73], result_values):
             assert pytest.approx(expected, 0.01) == actual
@@ -158,3 +159,13 @@ class TestApplyFeatureSelectors:
 class TestPreprocess:
     def test_preprocess(self, obj: DataProcessingJob):
         obj.run()
+
+
+class TestDistributeEventsHourly:
+    @pytest.fixture(scope="function")
+    def df(self, data_extractor: DataExtractor):
+        return data_extractor.read_inputevents_mv()
+    
+    def test_distribute_events_hourly(self, obj: DataProcessingJob, df):
+        result = obj.distribute_events_hourly(df)
+        print(result.count())

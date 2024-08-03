@@ -21,7 +21,7 @@ class _cfg:
     output_dir: str = UNSET
     data_dir: str = UNSET
     remote_run: bool = False
-    log_level: str = "INFO"
+    log_level: str = "WARN"
     temp_dir: str = tempfile.gettempdir()
     DEBUG: bool = field(default=False, metadata={'help': 'Enable debug mode'})
     

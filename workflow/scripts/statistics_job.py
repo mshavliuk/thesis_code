@@ -73,8 +73,9 @@ class StatisticsJob:
     def compute_variables_statistics(self, events: DataFrame):
         # has to be tuple to have the right brackets
         percentiles = (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)
+        # TODO: compute statistics for interval between consequent measurements of the same variable
         
-        groups_statistics = (
+        variables_statistics = (
             events.groupBy('variable').agg(
                 F.mean('value').alias('mean'),
                 F.stddev('value').alias('std'),
@@ -87,7 +88,7 @@ class StatisticsJob:
             .drop('percentiles')
             .orderBy('count', ascending=False))
         
-        return groups_statistics.toPandas()
+        return variables_statistics.toPandas()
     
     def compute_features_statistics(self, features, items: DataFrame) -> pd.DataFrame:
         all_feature_codes = list(itertools.chain.from_iterable(
