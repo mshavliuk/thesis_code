@@ -133,7 +133,7 @@ class DataProcessingJob:
             .unionByName(weight_events, allowMissingColumns=True)
             # filter events for selected features
             .join(feature_codes_df, on='code', how='inner')
-            .select('value', 'code', 'unit', 'admission_id', 'time', 'source', 'stay_id'))
+            .select('value', 'code', 'unit', 'time', 'source', 'stay_id'))
         return raw_events
     
     def apply_feature_selectors(self, events: DataFrame, features):
@@ -168,40 +168,43 @@ class DataProcessingJob:
         feature_events = self.add_variable_name_col(feature_events, features)
         return feature_events
     
-    def process_outliers(self, events: DataFrame, features):
+    @cache_result('sanitized_events', partitionBy='variable')
+    def process_outliers(self, events: DataFrame, features) -> DataFrame:
         filter_configs = {}
-        config_keys = {'min', 'max', 'outliers'}
+        medians = []
+        
         for feature in features:
-            if set(feature.keys()) > config_keys:
-                feature_config = {k: feature[k] for k in config_keys}
+            if (config := feature.get('filtering', None)) is not None:
                 if feature['name'] not in filter_configs:
-                    filter_configs[feature['name']] = feature_config
-                elif filter_configs[feature['name']] != feature_config:
+                    filter_configs[feature['name']] = config
+                    if config['action'] == 'replace_with_median':
+                        median = events \
+                            .filter((F.col('variable') == feature['name']) & config['valid']) \
+                            .agg(F.expr('percentile_approx(value, 0.5)').alias('median')) \
+                            .withColumn('variable', F.lit(feature['name']))
+                        medians.append(median)
+                elif str(filter_configs[feature['name']]) != str(config):
                     raise ValueError(f'Filtering configs for variable {feature["name"]} are different')
-            elif set(feature.keys()) & config_keys:
-                raise ValueError(f'Filtering config for variable {feature["name"]} should contain all (or none) of {config_keys}')
             else:
-                filter_configs[feature['name']] = {}
+                filter_configs[feature['name']] = {}  # no filtering
         
         events = events.repartition('variable')
         variables = []
-        medians = events.groupBy('variable').agg(F.expr('percentile_approx(value, 0.5)').alias('median'))
+        medians_df = reduce(DataFrame.unionByName, medians).cache()
         
         for variable, config in filter_configs.items():
             feature_events = events.filter(F.col('variable') == variable)
-            if not config:
+            if not config: # no filtering, append as is
                 variables.append(feature_events)
-            elif config['outliers'] == 'remove':
-                feature_events = (feature_events
-                                  .filter(F.col('value').between(config['min'], config['max'])))
+            elif config['action'] == 'remove':
+                feature_events = (feature_events.filter(config['valid']))
                 variables.append(feature_events)
-            elif config['outliers'] == 'replace_with_median':
-                feature_events = feature_events.join(medians, on='variable', how='left').withColumn(
+            elif config['action'] == 'replace_with_median':
+                feature_events = feature_events \
+                    .join(medians_df, on='variable', how='left') \
+                    .withColumn(
                     'value',
-                    F.when(
-                        F.col('value').between(config['min'], config['max']),
-                        F.col('value')
-                    ).otherwise(F.col('median'))
+                    F.when(config['valid'], F.col('value')).otherwise(F.col('median'))
                 ).drop('median')
                 variables.append(feature_events)
             else:
@@ -211,18 +214,14 @@ class DataProcessingJob:
         events = reduce(DataFrame.unionByName, variables)
         return events
     
-    @cache_result('sanitized_events', partitionBy='variable')
-    def sanitize_events(self, events: DataFrame, features) -> DataFrame:
-        return self.process_outliers(events, features)
-    
     def add_demographic_events(self, events, icu_stays):
         age_events = self.extract_age_events(icu_stays)
         patients = self.data_extractor.read_patients()
         gender_events = self.extract_gender_events(icu_stays, patients)
         
-        return events.drop('code') \
-            .unionByName(age_events) \
-            .unionByName(gender_events)
+        return events \
+            .unionByName(age_events.withColumn('source', F.array('source'))) \
+            .unionByName(gender_events.withColumn('source', F.array('source')))
     
     def add_variable_name_col(self, events: DataFrame, features):
         variable_names_df = events.sparkSession.createDataFrame(
@@ -248,8 +247,9 @@ class DataProcessingJob:
         with_rel_time = (
             events.alias('event')
             .join(icu_stays, on='stay_id', how='inner')
-            .withColumn('icu_time_minutes',
-                        ((F.col('time') - F.col('time_start')) / 60).cast('int'))
+            .withColumn('icu_time_minutes', F.round(
+                (F.col('time') - F.col('time_start')).cast('int') / 60
+            ).cast('int'))
             .drop('time')
             .select('event.*', 'icu_time_minutes'))
         return with_rel_time
@@ -278,10 +278,9 @@ class DataProcessingJob:
         icu_24_plus = icu_24_plus.join(stay_ids_with_events, on='stay_id', how='inner')
         return icu_24_plus
     
-    def extract_age_events(self, icu_stays):
+    def extract_age_events(self, icu_stays) -> DataFrame:
         age_events = icu_stays.select(
             'stay_id',
-            'admission_id',
             F.col('age').alias('value'),
             F.lit('Age').alias('variable'),
             F.lit(0).alias('icu_time_minutes'),
@@ -293,7 +292,6 @@ class DataProcessingJob:
     def extract_gender_events(self, icu_stays: DataFrame, patients: DataFrame):
         gender_events = icu_stays.join(patients, on='patient_id', how='inner').select(
             'stay_id',
-            'admission_id',
             F.when(F.col('GENDER') == 'M', 0).otherwise(1).alias('value'),
             F.lit('Gender').alias('variable'),
             F.lit(0).alias('icu_time_minutes'),
@@ -304,10 +302,12 @@ class DataProcessingJob:
     
     def run(self) -> DataFrame:
         features = get_features()
+        self.logger.info(f'Reading data')
         raw_events = self.get_raw_events(features)
+        self.logger.info('Selecting variables')
         feature_events = self.process_event_values(raw_events, features)
-        sanitized_events = self.sanitize_events(feature_events, features)
-        
+        self.logger.info('Processing outliers')
+        sanitized_events = self.process_outliers(feature_events, features)
         # filter ICU stays so we don't generate useless gender and age events
         icu_stays = (self.data_extractor.read_icustays()
                      .join(sanitized_events.select('stay_id').distinct(),
@@ -320,6 +320,7 @@ class DataProcessingJob:
         self.save_mortality_labels(icu_stays_24h)
         self.save_icu_splits(icu_stays_24h)
         
+        icu_events = self.throttle_events(icu_events)
         # for all icu_stays, not only 24h+
         all_events = self.add_demographic_events(icu_events, icu_stays)
         self.save_events(all_events)
@@ -349,9 +350,20 @@ class DataProcessingJob:
         ))
         
         event_triplets.write.mode('overwrite').parquet(self.outputs['events'])
+    
+    def throttle_events(self, events):
+        events = events.groupBy('stay_id', 'icu_time_minutes', 'variable').agg(
+            F.mean('value').alias('value'),
+            F.collect_set('source').alias('source'),
+            F.first('unit').alias('unit'),
+        )
+        
+        return events
+
 
 if __name__ == '__main__':
     spark = get_spark("Preprocessing MIMIC-III dataset")
     data_extractor = DataExtractor(spark)
     job = DataProcessingJob(data_extractor)
     job.run()
+    spark.stop()

@@ -93,10 +93,14 @@ class DataExtractor:
     @cache
     def read_admissions(self) -> DataFrame:
         admissions = self.spark.read.parquet(f'{Config.data_dir}/raw/ADMISSIONS.parquet')
-        admissions = self._filter_not_null(admissions,
-                                           {'HADM_ID', 'SUBJECT_ID', 'HOSPITAL_EXPIRE_FLAG'}) \
+        admissions = self._filter_not_null(
+            admissions, {'HADM_ID', 'SUBJECT_ID', 'HOSPITAL_EXPIRE_FLAG'}) \
             .withColumnsRenamed(self.col_names_map) \
-            .withColumn('died', F.col('died').cast('boolean'))
+            .withColumn('died', F.col('died').cast('boolean')) \
+            .alias('a') \
+            .join(self.read_icustays(), on='admission_id', how='inner') \
+            .select('a.*')
+        
         return self._select_known_columns(admissions).cache()
     
     @cache
@@ -112,7 +116,7 @@ class DataExtractor:
     def read_outputevents(self) -> DataFrame:
         outputevents = self.spark.read.parquet(f'{Config.data_dir}/raw/OUTPUTEVENTS.parquet')
         outputevents = self._filter_not_null(
-            outputevents, {'HADM_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
+            outputevents, {'CHARTTIME', 'ITEMID', 'VALUE', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
             .join(self.get_icustay_ids(), on='stay_id', how='inner')
         return self._select_known_columns(outputevents)
@@ -123,8 +127,11 @@ class DataExtractor:
             .filter((F.col('ERROR') == 0) | F.col('ERROR').isNull()) \
             .filter((F.col('VALUENUM').isNotNull()) | F.col('VALUE').isNotNull())
         # some chartevents have nullable ICUSTAY_ID, which is still valid
+        # RR my: 9,803,802
+        # after joining icu 8,115,504
+        
         chartevents = self._filter_not_null(
-            chartevents, {'HADM_ID', 'CHARTTIME', 'ITEMID', 'SUBJECT_ID', 'ICUSTAY_ID'})
+            chartevents, {'CHARTTIME', 'ITEMID', 'SUBJECT_ID', 'ICUSTAY_ID'})
         chartevents = chartevents \
             .withColumn('new_value', F.coalesce(F.col('VALUENUM'), F.col('VALUE'), F.lit('NONE'))) \
             .drop('VALUENUM', 'VALUE') \
@@ -132,6 +139,7 @@ class DataExtractor:
             .withColumnsRenamed(self.col_names_map) \
             .join(self.get_icustay_ids(), on='stay_id', how='inner')
         return self._select_known_columns(chartevents)
+    # RR count 8,115,504
     
     def read_labevents(self) -> DataFrame:
         # intubated labevents are categorical so value is string
@@ -143,8 +151,7 @@ class DataExtractor:
             .withColumn('new_value', F.coalesce(F.col('VALUENUM'), F.col('VALUE'), F.lit('NONE'))) \
             .drop('VALUENUM', 'VALUE') \
             .withColumnRenamed('new_value', 'value') \
-            .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_admission_ids(), on='admission_id', how='inner')
+            .withColumnsRenamed(self.col_names_map)
         return self._select_known_columns(labevents)
     
     def read_inputevents_mv(self) -> DataFrame:
@@ -152,8 +159,7 @@ class DataExtractor:
         inputevents = self.spark.read.parquet(f'{Config.data_dir}/raw/INPUTEVENTS_MV.parquet')
         inputevents = self._filter_not_null(
             inputevents,
-            {'HADM_ID', 'STARTTIME', 'ENDTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'AMOUNTUOM',
-             'SUBJECT_ID'}) \
+            {'STARTTIME', 'ENDTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'AMOUNTUOM', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
             .join(self.get_icustay_ids(), on='stay_id', how='inner')
         return self._select_known_columns(inputevents)
@@ -162,19 +168,23 @@ class DataExtractor:
         # FIXME: some inputevents have zero amount and are not useful
         inputevents = self.spark.read.parquet(f'{Config.data_dir}/raw/INPUTEVENTS_CV.parquet')
         inputevents = self._filter_not_null(
-            inputevents, {'HADM_ID', 'CHARTTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
+            inputevents, {'CHARTTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
             .join(self.get_icustay_ids(), on='stay_id', how='inner')
         return self._select_known_columns(inputevents)
     
+    # their total rows 17,527,935, my 17,527,935
+    # my prefiltered by amount only 2,496,047, their 2,496,047
+    # my with all filters 2,496,047
+    
     def read_weight_events(self) -> DataFrame:
         inputevents = self.spark.read.parquet(f'{Config.data_dir}/raw/INPUTEVENTS_MV.parquet')
         inputevents = self._filter_not_null(
-            inputevents, {'HADM_ID', 'STARTTIME', 'PATIENTWEIGHT', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
+            inputevents, {'STARTTIME', 'PATIENTWEIGHT', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
             .drop('ITEMID', 'AMOUNT', 'AMOUNTUOM', 'ENDTIME') \
             .withColumnsRenamed({
             'PATIENTWEIGHT': 'value',
-            'STARTTIME': 'time' }) \
+            'STARTTIME': 'time'}) \
             .withColumnsRenamed(self.col_names_map) \
             .join(self.get_icustay_ids(), on='stay_id', how='inner') \
             .withColumn('code', F.lit(self.WEIGHT_CODE)) \
