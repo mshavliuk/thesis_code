@@ -17,6 +17,7 @@ from workflow.scripts.config import Config
 from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
+from workflow.scripts.spark import get_spark
 
 
 class StatisticsJob:
@@ -41,12 +42,12 @@ class StatisticsJob:
         items = self.data_extractor.read_items()
         features_df = self.compute_features_statistics(features, items)
         self.save_as(features_df, 'features')
-        
+
         # training data statistics: train/test/val lengths, death prevalence
         train, test, val = (np.load(
             DataProcessingJob.outputs[f"{split}_stay_ids"], allow_pickle=True) for split in
             ('train', 'test', 'val'))
-        
+
         labels = pd.read_pickle(DataProcessingJob.outputs['mortality_labels'])
         training = self.compute_training_statistics(train, test, val, labels)
         self.save_as(training, 'training')
@@ -69,6 +70,7 @@ class StatisticsJob:
     
     def save_as(self, df: pd.DataFrame, key: str):
         df.to_csv(self.outputs[key], index=False, header=True)
+        self.logger.info(f'Saved {key} statistics to {self.outputs[key]}')
     
     def compute_variables_statistics(self, events: DataFrame):
         # has to be tuple to have the right brackets
@@ -165,10 +167,85 @@ class StatisticsJob:
             dataset = pq.ParquetDataset(parquet_file)
             num_rows = sum(f.metadata.num_rows for f in dataset.fragments)
             file_size = sum(Path(f).stat().st_size / 2 ** 20 for f in dataset.files)
-            for fragment in dataset.fragments:
-                num_rows += fragment.metadata.num_rows
             return parquet_file.name, num_rows, file_size
         
         rows = [get_row(p) for p in parquets]
         df = pd.DataFrame(rows, columns=['file', 'rows', 'size_mb'])
         return df
+    
+    def single_variable_stat(self, variable_name):
+        events = self.spark.read.parquet(DataProcessingJob.outputs['events'])
+        var_events = events.filter(F.col('variable') == variable_name)
+        var_events.groupBy('source').count().show()
+        
+        var_stat = var_events.agg(
+            F.mean('value').alias('mean'),
+            F.stddev('value').alias('std'),
+            F.min('value').alias('min'),
+            F.max('value').alias('max'),
+            F.count('value').alias('count'),
+        )
+        var_stat.show()
+        
+        var_events.groupBy('source').agg(
+            F.mean('value').alias('mean'),
+            F.stddev('value').alias('std'),
+            F.min('value').alias('min'),
+            F.max('value').alias('max'),
+            F.count('value').alias('count'),
+        ).show()
+    
+    def count_sanitized_events(self):
+        events = DataProcessingJob.process_outliers.get_cached_df(self.spark)
+        print(f"Num sanitized events")
+        events.groupBy('source').count().show()
+
+    
+    def hourly_inputevents_mv(self):
+        dpj = DataProcessingJob(self.data_extractor)
+        inputevents_mv = self.data_extractor.read_inputevents_mv()
+        total_count = inputevents_mv.count()
+        print(f"Total events: {total_count}")
+        
+        hour_plus_count = inputevents_mv.filter((F.col('time_end') - F.col('time_start')).cast('int') > 3600).count()
+        print(f"Num events longer than 1h: {hour_plus_count}")
+        
+        inputevents_mv = dpj.distribute_events_hourly(inputevents_mv)
+        hourly_count =inputevents_mv.count()
+        print(hourly_count)
+        
+    def icustays(self):
+        icustays = self.data_extractor.read_icustays()
+        print(f"Num icustays {icustays.count()}")
+
+    
+    def labevents(self):
+        labevents = self.data_extractor.read_labevents()
+        print(f"Num raw labevents {labevents.count()}")
+        
+        sanitized_labevents = DataProcessingJob.process_outliers.get_cached_df(self.spark)
+        sanitized_labevents = sanitized_labevents.filter(F.col('source') == 'labevents')
+        sanitized_labevents.groupBy('variable').count().show(1000)
+        print(f"Num sanitized labevents {sanitized_labevents.count()}")
+        
+    def chartevents(self):
+        chartevents = self.data_extractor.read_chartevents()
+        print(f"Num raw chartevents {chartevents.count()}")
+        
+        sanitized_chartevents = DataProcessingJob.process_outliers.get_cached_df(self.spark)
+        sanitized_chartevents = sanitized_chartevents.filter(F.col('source') == 'chartevents')
+        sanitized_chartevents.groupBy('variable').count().show(1000)
+        print(f"Num sanitized chartevents {sanitized_chartevents.count()}")
+
+if __name__ == '__main__':
+    # spark = SparkSession.builder.appName('StatisticsJob').getOrCreate()
+    spark = get_spark('StatisticsJob')
+    job = StatisticsJob(spark)
+    job.run()
+    # job.chartevents()
+    # job.labevents()
+    # job.count_sanitized_events()
+    # job.single_variable_stat('D5W')
+    # job.icustays()
+    # job.hourly_inputevents_mv()
+    spark.stop()
