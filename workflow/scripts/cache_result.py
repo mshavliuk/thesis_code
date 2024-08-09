@@ -74,9 +74,13 @@ def get_cached_df(spark: SparkSession, cache_path: str, expected_schema: StructT
     cached_df = spark.read.schema(cached_schema).parquet(parquet_path)
     for field in cached_schema.fields:
         if not field.nullable:
+            if field.dataType.typeName() == 'array':
+                placeholder = F.array([]).cast(field.dataType)
+            else:
+                placeholder = F.lit(0).cast(field.dataType)
             cached_df = cached_df.withColumn(
                 field.name,
-                F.coalesce(F.col(field.name), F.lit(0).cast(field.dataType)))
+                F.coalesce(F.col(field.name), placeholder))
     return cached_df
 
 def cache_df(df: DataFrame, path: str, **kwargs) -> DataFrame:

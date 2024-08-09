@@ -1,0 +1,993 @@
+code,unit,value,group
+224690,insp/min,32.0,RR
+220210,insp/min,20.0,RR
+220210,insp/min,24.0,RR
+220210,insp/min,24.0,RR
+220210,insp/min,24.0,RR
+220210,insp/min,25.0,RR
+618,BPM,31.0,RR
+618,BPM,21.0,RR
+220210,insp/min,14.0,RR
+618,BPM,23.0,RR
+220210,insp/min,24.0,RR
+220210,insp/min,14.0,RR
+220210,insp/min,11.0,RR
+224690,insp/min,29.0,RR
+615,BPM,13.0,RR
+618,BPM,27.0,RR
+220210,insp/min,16.0,RR
+618,BPM,12.0,RR
+220210,insp/min,28.0,RR
+618,BPM,23.0,RR
+619,BPM,12.0,RR
+224690,insp/min,28.0,RR
+618,BPM,12.0,RR
+618,BPM,15.0,RR
+618,BPM,21.0,RR
+615,BPM,27.0,RR
+615,BPM,20.0,RR
+618,BPM,16.0,RR
+618,BPM,27.0,RR
+224690,insp/min,22.0,RR
+220210,insp/min,22.0,RR
+220210,insp/min,21.0,RR
+618,BPM,18.0,RR
+224689,insp/min,0.0,RR
+618,BPM,14.0,RR
+615,BPM,25.0,RR
+220210,insp/min,21.0,RR
+615,BPM,15.0,RR
+618,BPM,25.0,RR
+224688,insp/min,26.0,RR
+618,BPM,25.0,RR
+220210,insp/min,21.0,RR
+618,BPM,12.0,RR
+615,BPM,16.0,RR
+224688,insp/min,14.0,RR
+224689,insp/min,19.0,RR
+224689,insp/min,37.0,RR
+220210,insp/min,15.0,RR
+224688,insp/min,16.0,RR
+224689,insp/min,0.0,RR
+220210,insp/min,18.0,RR
+220210,insp/min,28.0,RR
+224689,insp/min,0.0,RR
+220210,insp/min,18.0,RR
+220210,insp/min,20.0,RR
+224690,insp/min,14.0,RR
+220210,insp/min,20.0,RR
+618,BPM,14.0,RR
+220210,insp/min,24.0,RR
+618,BPM,17.0,RR
+618,BPM,22.0,RR
+618,BPM,13.0,RR
+618,BPM,32.0,RR
+618,BPM,24.0,RR
+618,BPM,12.0,RR
+618,BPM,24.0,RR
+619,BPM,16.0,RR
+618,BPM,19.0,RR
+618,BPM,44.0,RR
+615,BPM,10.0,RR
+618,BPM,20.0,RR
+615,BPM,20.0,RR
+618,BPM,23.0,RR
+615,BPM,32.0,RR
+456,mmHg,96.6667,MBP
+456,mmHg,60.3333,MBP
+220181,mmHg,64.0,MBP
+220052,mmHg,87.0,MBP
+220181,mmHg,73.0,MBP
+220052,mmHg,64.0,MBP
+220181,mmHg,71.0,MBP
+220181,mmHg,71.0,MBP
+52,mmHg,98.0,MBP
+456,mmHg,49.0,MBP
+220181,mmHg,88.0,MBP
+52,mmHg,74.0,MBP
+220181,mmHg,69.0,MBP
+456,mmHg,94.0,MBP
+220052,mmHg,57.0,MBP
+220052,mmHg,59.0,MBP
+52,mmHg,77.0,MBP
+220181,mmHg,73.0,MBP
+220181,mmHg,60.0,MBP
+220052,mmHg,71.0,MBP
+220052,mmHg,79.0,MBP
+220181,mmHg,49.0,MBP
+52,mmHg,89.0,MBP
+220052,mmHg,80.0,MBP
+220181,mmHg,104.0,MBP
+220052,mmHg,92.0,MBP
+456,mmHg,82.0,MBP
+52,mmHg,78.0,MBP
+52,mmHg,58.0,MBP
+220181,mmHg,52.0,MBP
+52,mmHg,83.0,MBP
+220052,mmHg,69.0,MBP
+456,mmHg,90.3333,MBP
+220052,mmHg,66.0,MBP
+52,mmHg,85.0,MBP
+456,mmHg,80.0,MBP
+52,mmHg,71.0,MBP
+52,mmHg,78.0,MBP
+220181,mmHg,108.0,MBP
+220181,mmHg,78.0,MBP
+52,mmHg,94.0,MBP
+52,mmHg,132.0,MBP
+220181,mmHg,93.0,MBP
+456,mmHg,89.0,MBP
+52,mmHg,79.0,MBP
+220181,mmHg,79.0,MBP
+52,mmHg,106.0,MBP
+220052,mmHg,71.0,MBP
+52,mmHg,93.0,MBP
+456,mmHg,92.6667,MBP
+220052,mmHg,102.0,MBP
+220181,mmHg,64.0,MBP
+52,mmHg,79.0,MBP
+52,mmHg,65.0,MBP
+52,mmHg,73.0,MBP
+456,mmHg,75.0,MBP
+456,mmHg,77.6667,MBP
+456,mmHg,104.333,MBP
+220181,mmHg,68.0,MBP
+52,mmHg,228.0,MBP
+456,mmHg,56.0,MBP
+52,mmHg,87.0,MBP
+456,mmHg,117.333,MBP
+52,mmHg,82.0,MBP
+220051,mmHg,63.0,DBP
+220051,mmHg,69.0,DBP
+220051,mmHg,61.0,DBP
+220180,mmHg,59.0,DBP
+8368,mmHg,86.0,DBP
+8368,mmHg,80.0,DBP
+220051,mmHg,44.0,DBP
+8368,mmHg,64.0,DBP
+8441,mmHg,55.0,DBP
+220051,mmHg,72.0,DBP
+8441,mmHg,82.0,DBP
+220051,mmHg,66.0,DBP
+220180,mmHg,71.0,DBP
+220180,mmHg,80.0,DBP
+8441,mmHg,76.0,DBP
+225310,mmHg,64.0,DBP
+220180,mmHg,53.0,DBP
+8441,mmHg,41.0,DBP
+220180,mmHg,76.0,DBP
+220180,mmHg,53.0,DBP
+8368,mmHg,40.0,DBP
+220180,mmHg,47.0,DBP
+8368,mmHg,45.0,DBP
+8441,mmHg,61.0,DBP
+8441,mmHg,41.0,DBP
+8368,mmHg,63.0,DBP
+8368,mmHg,81.0,DBP
+8368,mmHg,89.0,DBP
+8368,mmHg,58.0,DBP
+220180,mmHg,42.0,DBP
+220051,mmHg,52.0,DBP
+220051,mmHg,54.0,DBP
+8368,mmHg,75.0,DBP
+8441,mmHg,29.0,DBP
+8441,mmHg,43.0,DBP
+220051,mmHg,62.0,DBP
+220180,mmHg,76.0,DBP
+8368,mmHg,55.0,DBP
+220051,mmHg,77.0,DBP
+8441,mmHg,42.0,DBP
+8441,mmHg,62.0,DBP
+8441,mmHg,70.0,DBP
+220051,mmHg,63.0,DBP
+8441,mmHg,31.0,DBP
+220051,mmHg,57.0,DBP
+8441,mmHg,39.0,DBP
+8368,mmHg,46.0,DBP
+8441,mmHg,54.0,DBP
+8441,mmHg,68.0,DBP
+220051,mmHg,47.0,DBP
+220180,mmHg,70.0,DBP
+8368,mmHg,60.0,DBP
+225310,mmHg,45.0,DBP
+8368,mmHg,68.0,DBP
+8441,mmHg,75.0,DBP
+8441,mmHg,94.0,DBP
+8368,mmHg,52.0,DBP
+8441,mmHg,69.0,DBP
+8441,mmHg,55.0,DBP
+8441,mmHg,48.0,DBP
+8368,mmHg,72.0,DBP
+8441,mmHg,80.0,DBP
+8368,mmHg,44.0,DBP
+8368,mmHg,62.0,DBP
+8441,mmHg,50.0,DBP
+8441,mmHg,68.0,DBP
+8368,mmHg,52.0,DBP
+220179,mmHg,94.0,SBP
+220050,mmHg,93.0,SBP
+220050,mmHg,81.0,SBP
+220179,mmHg,132.0,SBP
+51,mmHg,92.0,SBP
+220050,mmHg,163.0,SBP
+51,mmHg,110.0,SBP
+455,mmHg,142.0,SBP
+220050,mmHg,97.0,SBP
+220050,mmHg,98.0,SBP
+51,mmHg,148.0,SBP
+455,mmHg,186.0,SBP
+455,mmHg,138.0,SBP
+455,mmHg,105.0,SBP
+220050,mmHg,132.0,SBP
+455,mmHg,180.0,SBP
+220050,mmHg,159.0,SBP
+51,mmHg,148.0,SBP
+51,mmHg,75.0,SBP
+220050,mmHg,134.0,SBP
+51,mmHg,101.0,SBP
+455,mmHg,170.0,SBP
+220050,mmHg,94.0,SBP
+220050,mmHg,128.0,SBP
+220050,mmHg,157.0,SBP
+455,mmHg,103.0,SBP
+51,mmHg,169.0,SBP
+51,mmHg,127.0,SBP
+51,mmHg,124.0,SBP
+225309,mmHg,4.7,SBP
+220050,mmHg,111.0,SBP
+455,mmHg,190.0,SBP
+455,mmHg,104.0,SBP
+220179,mmHg,97.0,SBP
+51,mmHg,112.0,SBP
+455,mmHg,111.0,SBP
+455,mmHg,107.0,SBP
+220050,mmHg,122.0,SBP
+455,mmHg,155.0,SBP
+220050,mmHg,175.0,SBP
+51,mmHg,142.0,SBP
+455,mmHg,102.0,SBP
+51,mmHg,129.0,SBP
+220050,mmHg,123.0,SBP
+220050,mmHg,94.0,SBP
+220179,mmHg,106.0,SBP
+51,mmHg,93.0,SBP
+220179,mmHg,74.0,SBP
+51,mmHg,121.0,SBP
+51,mmHg,122.0,SBP
+455,mmHg,94.0,SBP
+455,mmHg,152.0,SBP
+455,mmHg,106.0,SBP
+51,mmHg,100.0,SBP
+455,mmHg,148.0,SBP
+51,mmHg,129.0,SBP
+455,mmHg,110.0,SBP
+455,mmHg,93.0,SBP
+51,mmHg,86.0,SBP
+51,mmHg,144.0,SBP
+51,mmHg,108.0,SBP
+455,mmHg,126.0,SBP
+455,mmHg,132.0,SBP
+51,mmHg,126.0,SBP
+51,mmHg,167.0,SBP
+455,mmHg,127.0,SBP
+51,mmHg,88.0,SBP
+225158,ml,9.998841,Normal Saline
+225158,ml,225.01129,Normal Saline
+225158,ml,19.990932,Normal Saline
+225158,ml,2.140975,Normal Saline
+225158,ml,2.9805481,Normal Saline
+225158,ml,2.0,Normal Saline
+225158,ml,17.373238,Normal Saline
+225158,ml,1.5470297,Normal Saline
+225158,ml,3.0,Normal Saline
+225158,ml,3.7471642,Normal Saline
+225158,ml,75.00375,Normal Saline
+225158,ml,10.0,Normal Saline
+225158,ml,3.1004162,Normal Saline
+225158,ml,10.0,Normal Saline
+225158,ml,5.0033355,Normal Saline
+225158,ml,5.0,Normal Saline
+225158,ml,5.0,Normal Saline
+225158,ml,3.545861,Normal Saline
+30018,ml,2.0,Normal Saline
+30018,ml,10.0,Normal Saline
+225158,ml,3.0024025,Normal Saline
+225158,ml,10.0,Normal Saline
+225158,ml,2.0028641,Normal Saline
+225158,ml,9.998663,Normal Saline
+225158,ml,2.7900476,Normal Saline
+30018,ml,15.0,Normal Saline
+30018,ml,10.0,Normal Saline
+225158,ml,0.5,Normal Saline
+225158,ml,4.9998794,Normal Saline
+30018,ml,20.0,Normal Saline
+30018,ml,10.0,Normal Saline
+30018,ml,5.0,Normal Saline
+225158,ml,50.83261,Normal Saline
+225158,ml,10.0,Normal Saline
+30018,ml,20.0,Normal Saline
+225158,ml,75.0,Normal Saline
+30018,ml,10.0,Normal Saline
+30018,ml,10.0,Normal Saline
+30018,ml,10.0,Normal Saline
+30018,ml,2.5,Normal Saline
+30018,ml,3.0,Normal Saline
+30018,ml,6.0,Normal Saline
+30018,ml,2.0,Normal Saline
+30018,ml,0.0,Normal Saline
+30018,ml,400.0,Normal Saline
+30018,ml,1.4,Normal Saline
+30018,ml,4.0,Normal Saline
+30018,ml,3.0,Normal Saline
+30018,ml,5.0,Normal Saline
+30018,ml,3.0,Normal Saline
+220045,bpm,105.0,HR
+211,BPM,84.0,HR
+211,BPM,70.0,HR
+220045,bpm,92.0,HR
+211,BPM,57.0,HR
+211,BPM,87.0,HR
+211,BPM,98.0,HR
+220045,bpm,75.0,HR
+220045,bpm,70.0,HR
+220045,bpm,66.0,HR
+220045,bpm,113.0,HR
+211,BPM,63.0,HR
+220045,bpm,89.0,HR
+220045,bpm,70.0,HR
+211,BPM,82.0,HR
+211,BPM,95.0,HR
+220045,bpm,98.0,HR
+220045,bpm,70.0,HR
+220045,bpm,76.0,HR
+220045,bpm,66.0,HR
+211,BPM,69.0,HR
+220045,bpm,108.0,HR
+211,BPM,77.0,HR
+211,BPM,98.0,HR
+220045,bpm,78.0,HR
+220045,bpm,68.0,HR
+211,BPM,93.0,HR
+211,BPM,106.0,HR
+211,BPM,83.0,HR
+220045,bpm,63.0,HR
+220045,bpm,96.0,HR
+220045,bpm,71.0,HR
+211,BPM,102.0,HR
+220045,bpm,91.0,HR
+211,BPM,84.0,HR
+211,BPM,95.0,HR
+220045,bpm,71.0,HR
+220045,bpm,98.0,HR
+211,BPM,81.0,HR
+211,BPM,62.0,HR
+220045,bpm,87.0,HR
+211,BPM,66.0,HR
+211,BPM,110.0,HR
+220045,bpm,111.0,HR
+220045,bpm,84.0,HR
+220045,bpm,110.0,HR
+211,BPM,97.0,HR
+220045,bpm,121.0,HR
+220045,bpm,97.0,HR
+211,BPM,88.0,HR
+211,BPM,103.0,HR
+211,BPM,91.0,HR
+220045,bpm,93.0,HR
+220045,bpm,141.0,HR
+220045,bpm,87.0,HR
+211,BPM,90.0,HR
+211,BPM,78.0,HR
+211,BPM,85.0,HR
+211,BPM,43.0,HR
+211,BPM,80.0,HR
+211,BPM,64.0,HR
+30013,ml,100.0,D5W
+30013,ml,12.499999,D5W
+30013,ml,10.0,D5W
+30013,ml,13.5,D5W
+220949,ml,250.0,D5W
+220949,ml,5.2901783,D5W
+30013,ml,2.9999998,D5W
+220949,ml,5.0,D5W
+220949,ml,20.0,D5W
+220949,ml,7.953341,D5W
+220949,ml,0.5257624,D5W
+30013,ml,2.5125,D5W
+220949,ml,100.0,D5W
+30013,ml,12.375,D5W
+220949,ml,0.36180323,D5W
+220949,ml,5.833334,D5W
+30013,ml,3.0,D5W
+220949,ml,24.996847,D5W
+220949,ml,10.0,D5W
+220949,ml,54.779224,D5W
+220949,ml,21.544277,D5W
+220949,ml,10.0,D5W
+220949,ml,11.252933,D5W
+220949,ml,200.0,D5W
+220949,ml,0.25,D5W
+30013,ml,8.0,D5W
+30013,ml,15.0,D5W
+30013,,0.0,D5W
+30013,ml,15.0,D5W
+30013,ml,50.0,D5W
+30013,ml,280.0,D5W
+30013,ml,10.0,D5W
+30013,ml,68.85,D5W
+30013,ml,12.499999,D5W
+30013,ml,10.0,D5W
+30013,ml,50.0,D5W
+30013,ml,5.0,D5W
+30013,ml,0.0,D5W
+30013,ml,5.0,D5W
+30013,ml,100.0,D5W
+30013,ml,150.0,D5W
+30013,ml,2.0,D5W
+30013,ml,49.875,D5W
+30013,ml,50.0,D5W
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,98.0,O2 Saturation
+646,%,98.0,O2 Saturation
+646,%,95.0,O2 Saturation
+646,%,98.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,95.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,98.0,O2 Saturation
+50817,%,65.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+220277,%,96.0,O2 Saturation
+646,%,99.0,O2 Saturation
+646,%,99.0,O2 Saturation
+220277,%,97.0,O2 Saturation
+646,%,99.0,O2 Saturation
+646,%,100.0,O2 Saturation
+220277,%,98.0,O2 Saturation
+220277,%,99.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+646,%,99.0,O2 Saturation
+646,%,99.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,95.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,96.0,O2 Saturation
+220277,%,96.0,O2 Saturation
+646,%,96.0,O2 Saturation
+220277,%,99.0,O2 Saturation
+220277,%,98.0,O2 Saturation
+646,%,92.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+646,%,94.0,O2 Saturation
+646,%,97.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+220277,%,100.0,O2 Saturation
+646,%,63.0,O2 Saturation
+220277,%,94.0,O2 Saturation
+220277,%,97.0,O2 Saturation
+220277,%,94.0,O2 Saturation
+646,%,99.0,O2 Saturation
+220277,%,99.0,O2 Saturation
+220277,%,98.0,O2 Saturation
+646,%,95.0,O2 Saturation
+646,%,96.0,O2 Saturation
+646,%,100.0,O2 Saturation
+220277,%,98.0,O2 Saturation
+646,%,96.0,O2 Saturation
+646,%,97.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,97.0,O2 Saturation
+646,%,99.0,O2 Saturation
+646,%,100.0,O2 Saturation
+646,%,97.0,O2 Saturation
+646,%,98.0,O2 Saturation
+646,%,77.0,O2 Saturation
+40055,ml,180.0,Urine
+40055,ml,40.0,Urine
+40055,ml,220.0,Urine
+226559,mL,50.0,Urine
+40055,ml,700.0,Urine
+40055,ml,4.0,Urine
+40055,ml,15.0,Urine
+40055,ml,5.0,Urine
+40055,ml,80.0,Urine
+40055,ml,80.0,Urine
+40055,ml,80.0,Urine
+226559,mL,80.0,Urine
+40055,ml,0.0,Urine
+226559,mL,150.0,Urine
+226559,mL,80.0,Urine
+40055,ml,35.0,Urine
+226559,mL,60.0,Urine
+40055,ml,140.0,Urine
+40055,ml,100.0,Urine
+40055,ml,50.0,Urine
+40055,ml,200.0,Urine
+226559,mL,100.0,Urine
+40055,ml,100.0,Urine
+40055,ml,160.0,Urine
+40069,ml,100.0,Urine
+677,Deg. C,3.7962787,Temperature
+223761,?F,35.38889,Temperature
+677,Deg. C,2.654334,Temperature
+223761,?F,38.0,Temperature
+677,Deg. C,2.4691114,Temperature
+223761,?F,36.38889,Temperature
+679,Deg. F,36.100002,Temperature
+677,Deg. C,2.4691114,Temperature
+678,Deg. F,37.666668,Temperature
+676,Deg. C,0.61111027,Temperature
+678,Deg. F,37.666668,Temperature
+223762,?C,2.6666667,Temperature
+677,Deg. C,2.932112,Temperature
+676,Deg. C,3.000001,Temperature
+676,Deg. C,2.6666663,Temperature
+677,Deg. C,3.1481657,Temperature
+679,Deg. F,36.699997,Temperature
+677,Deg. C,2.6851676,Temperature
+677,Deg. C,2.3148324,Temperature
+678,Deg. F,37.38889,Temperature
+679,Deg. F,37.1,Temperature
+678,Deg. F,35.722225,Temperature
+676,Deg. C,3.8333342,Temperature
+678,Deg. F,36.944443,Temperature
+222168,mg,10.433077,Propofol
+222168,mg,234.375,Propofol
+222168,mg,105.51724,Propofol
+222168,mg,173.4104,Propofol
+30131,mg,27.48,Propofol
+30131,mg,562.8,Propofol
+30131,mg,240.0,Propofol
+30131,mg,0.0,Propofol
+225664,,132.0,Glucose (Blood)
+225664,,184.0,Glucose (Blood)
+225664,,69.0,Glucose (Blood)
+811,,203.0,Glucose (Blood)
+811,,157.0,Glucose (Blood)
+1529,,128.0,Glucose (Blood)
+811,,106.0,Glucose (Blood)
+1529,,107.0,Glucose (Blood)
+807,,100.0,Glucose (Blood)
+807,,88.0,Glucose (Blood)
+807,,208.0,Glucose (Blood)
+811,,118.0,Glucose (Blood)
+50809,mg/dL,130.0,Glucose (Blood)
+50809,mg/dL,107.0,Glucose (Blood)
+225943,ml,0.2736103,Solution
+225943,ml,31.762712,Solution
+225943,ml,4.6296296,Solution
+225943,ml,26.975048,Solution
+225943,ml,0.806219,Solution
+225943,ml,19.920176,Solution
+225943,ml,5.7661257,Solution
+225943,ml,5.898123,Solution
+221749,mg,1.911122,Neosynephrine
+221749,mg,4.8687873,Neosynephrine
+221749,mg,4.404188,Neosynephrine
+221749,mg,15.673608,Neosynephrine
+221749,mg,20.000002,Neosynephrine
+221749,mg,16.426987,Neosynephrine
+30128,mg,4.5792,Neosynephrine
+221906,mg,0.010520169,Norepinephrine
+221906,mg,0.08328996,Norepinephrine
+221906,mg,2.6373627,Norepinephrine
+221906,mg,0.07885589,Norepinephrine
+221906,mg,0.18183802,Norepinephrine
+221906,mg,0.45540372,Norepinephrine
+221906,mg,2.0469084,Norepinephrine
+30120,mg,1.3055999,Norepinephrine
+30120,mg,0.0,Norepinephrine
+221744,mg,0.025000002,Fentanyl
+221744,mg,0.15016504,Fentanyl
+221744,mg,0.05,Fentanyl
+221744,mg,0.05,Fentanyl
+225942,mg,0.050052144,Fentanyl
+225942,mg,0.07508096,Fentanyl
+221744,mg,0.05,Fentanyl
+30118,mg,0.05,Fentanyl
+30118,mg,0.025,Fentanyl
+223258,units,5.2631583,Insulin Regular
+223258,units,9.059047,Insulin Regular
+224639,kg,39.00891,Weight
+224639,kg,53.070263,Weight
+763,kg,27.21552,Weight
+224639,kg,35.380177,Weight
+224639,kg,40.82328,Weight
+224639,kg,45.3592,Weight
+224639,kg,40.505764,Weight
+224639,kg,38.101727,Weight
+224639,kg,48.262188,Weight
+224639,kg,32.068954,Weight
+224639,kg,47.03749,Weight
+224639,kg,38.328526,Weight
+224639,kg,44.814888,Weight
+224639,kg,32.34111,Weight
+224639,kg,29.937073,Weight
+224639,kg,31.025692,Weight
+224639,kg,30.798897,Weight
+224639,kg,24.94756,Weight
+224639,kg,41.866543,Weight
+224639,kg,40.82328,Weight
+224639,kg,90.990555,Weight
+224639,kg,64.863655,Weight
+224639,kg,50.121918,Weight
+224639,kg,31.75144,Weight
+224639,kg,36.28736,Weight
+224639,kg,124.7378,Weight
+224639,kg,36.28736,Weight
+224639,kg,39.462505,Weight
+224639,kg,30.073149,Weight
+224639,kg,23.359987,Weight
+224639,kg,27.21552,Weight
+224639,kg,44.27058,Weight
+224639,kg,40.596485,Weight
+224639,kg,36.28736,Weight
+224639,kg,48.8065,Weight
+224639,kg,26.308336,Weight
+224639,kg,45.22312,Weight
+224639,kg,37.194546,Weight
+224639,kg,43.000523,Weight
+51221,%,34.3,Hct
+51221,%,24.8,Hct
+51221,%,24.7,Hct
+51221,%,26.9,Hct
+51221,%,26.8,Hct
+51221,%,28.3,Hct
+51221,%,33.1,Hct
+51221,%,27.0,Hct
+51221,%,21.2,Hct
+51221,%,34.4,Hct
+51221,%,27.2,Hct
+220621,,119.0,Glucose (Serum)
+50931,mg/dL,103.0,Glucose (Serum)
+50931,mg/dL,111.0,Glucose (Serum)
+50931,mg/dL,233.0,Glucose (Serum)
+50931,mg/dL,59.0,Glucose (Serum)
+50931,mg/dL,105.0,Glucose (Serum)
+50971,mEq/L,5.1,Potassium
+50971,mEq/L,4.6,Potassium
+50822,mEq/L,3.7,Potassium
+50822,mEq/L,4.7,Potassium
+50971,mEq/L,3.7,Potassium
+50971,mEq/L,4.2,Potassium
+50971,mEq/L,4.5,Potassium
+50971,mEq/L,4.6,Potassium
+50971,mEq/L,3.9,Potassium
+50971,mEq/L,4.0,Potassium
+223835,,0.4,FiO2
+223835,,0.4,FiO2
+223835,,0.5,FiO2
+223835,,0.8,FiO2
+223835,,1.0,FiO2
+223835,,0.5,FiO2
+223835,,0.4,FiO2
+223835,,0.4,FiO2
+190,torr,0.5,FiO2
+190,torr,0.4,FiO2
+190,torr,0.5,FiO2
+190,torr,0.5,FiO2
+190,torr,0.7,FiO2
+190,torr,0.3,FiO2
+51265,K/uL,285.0,Platelet Count
+51265,K/uL,460.0,Platelet Count
+51265,K/uL,180.0,Platelet Count
+51265,K/uL,476.0,Platelet Count
+51265,K/uL,123.0,Platelet Count
+51265,K/uL,261.0,Platelet Count
+225152,units,1250.6265,Heparin
+225152,units,19.166666,Heparin
+225975,dose,1.0,Heparin
+225152,units,800.45386,Heparin
+30025,U,500.0,Heparin
+30025,U,2950.0,Heparin
+30025,U,900.0,Heparin
+30025,U,850.0,Heparin
+30025,U,600.0,Heparin
+225166,mEq,1.0000001,KCl
+225166,mEq,20.0,KCl
+225166,mEq,1.9999999,KCl
+225166,mEq,20.0,KCl
+225166,mEq,1.6,KCl
+225166,mEq,10.0,KCl
+225166,mEq,3.0,KCl
+225166,mEq,1.5,KCl
+30026,mEq,0.2,KCl
+30026,mEq,0.16,KCl
+30026,mEq,0.2,KCl
+30026,mEq,2.0,KCl
+51301,K/uL,5.0,WBC
+51301,K/uL,12.4,WBC
+51301,K/uL,10.3,WBC
+51301,K/uL,0.3,WBC
+51301,K/uL,17.5,WBC
+227695,ml,40.0,Fiber
+225936,ml,60.041695,Fiber
+225936,ml,50.01773,Fiber
+225928,ml,2.989,Fiber
+225936,ml,60.0,Fiber
+225936,ml,90.57168,Fiber
+225936,ml,10.0,Fiber
+30073,ml,20.0,Fiber
+30073,ml,30.0,Fiber
+30166,ml,10.0,Fiber
+30166,ml,0.0,Fiber
+51222,g/dL,11.0,Hgb
+51222,g/dL,11.2,Hgb
+51222,g/dL,9.9,Hgb
+51222,g/dL,9.2,Hgb
+51222,g/dL,13.6,Hgb
+50811,g/dL,10.6,Hgb
+51222,g/dL,8.4,Hgb
+51222,g/dL,11.1,Hgb
+51222,g/dL,8.6,Hgb
+51222,g/dL,12.4,Hgb
+221668,mg,2.001129,Midazolam
+221668,mg,2.0006375,Midazolam
+221668,mg,1.0000907,Midazolam
+221668,mg,5.0038476,Midazolam
+221668,mg,1.5024278,Midazolam
+30124,mg,4.0,Midazolam
+30124,mg,3.0,Midazolam
+51279,m/uL,4.06,RBC
+51279,m/uL,2.93,RBC
+51279,m/uL,2.72,RBC
+51279,m/uL,3.13,RBC
+51279,m/uL,3.96,RBC
+50983,mEq/L,146.0,Sodium
+50983,mEq/L,140.0,Sodium
+50983,mEq/L,138.0,Sodium
+50983,mEq/L,138.0,Sodium
+50983,mEq/L,141.0,Sodium
+50824,mEq/L,134.0,Sodium
+50983,mEq/L,133.0,Sodium
+50902,mEq/L,99.0,Chloride
+50902,mEq/L,96.0,Chloride
+50806,mEq/L,108.0,Chloride
+50902,mEq/L,101.0,Chloride
+50902,mEq/L,108.0,Chloride
+50902,mEq/L,100.0,Chloride
+50902,mEq/L,79.0,Chloride
+50806,mEq/L,109.0,Chloride
+50902,mEq/L,105.0,Chloride
+50902,mEq/L,103.0,Chloride
+50902,mEq/L,100.0,Chloride
+50902,mEq/L,105.0,Chloride
+50902,mEq/L,101.0,Chloride
+50902,mEq/L,110.0,Chloride
+51248,pg,37.9,MCH
+51248,pg,31.4,MCH
+51248,pg,30.5,MCH
+51248,pg,31.5,MCH
+51006,mg/dL,15.0,BUN
+51006,mg/dL,71.0,BUN
+51006,mg/dL,12.0,BUN
+51006,mg/dL,11.0,BUN
+51006,mg/dL,25.0,BUN
+30140,ml,21.12,Unknown
+30140,ml,32.364,Unknown
+30140,ml,15.75,Unknown
+30140,ml,27.264,Unknown
+30140,ml,7.86,Unknown
+30140,ml,47.52,Unknown
+30140,ml,9.84,Unknown
+30140,ml,5.994,Unknown
+30140,ml,28.518,Unknown
+50821,mm Hg,52.0,PO2
+50821,mm Hg,167.0,PO2
+50821,mm Hg,103.0,PO2
+50821,mm Hg,260.0,PO2
+51250,fL,93.0,MCV
+51250,fL,85.0,MCV
+51250,fL,81.0,MCV
+51250,fL,88.0,MCV
+51277,%,15.5,RDW
+51277,%,15.1,RDW
+51277,%,13.5,RDW
+51277,%,17.3,RDW
+51277,%,13.7,RDW
+51249,%,32.7,MCHC
+51249,%,34.1,MCHC
+51249,%,33.9,MCHC
+51249,%,31.3,MCHC
+51249,%,32.4,MCHC
+51275,sec,114.8,PTT
+51275,sec,34.3,PTT
+51275,sec,27.6,PTT
+51275,sec,77.6,PTT
+50912,mg/dL,0.6,Creatinine Blood
+50912,mg/dL,0.6,Creatinine Blood
+50912,mg/dL,1.5,Creatinine Blood
+50912,mg/dL,1.0,Creatinine Blood
+50912,mg/dL,0.6,Creatinine Blood
+50912,mg/dL,0.6,Creatinine Blood
+50912,mg/dL,2.1,Creatinine Blood
+50912,mg/dL,0.7,Creatinine Blood
+50912,mg/dL,1.1,Creatinine Blood
+50882,mEq/L,20.0,Bicarbonate
+50882,mEq/L,29.0,Bicarbonate
+50882,mEq/L,25.0,Bicarbonate
+50882,mEq/L,32.0,Bicarbonate
+51274,sec,14.4,PT
+51274,sec,18.4,PT
+51274,sec,10.1,PT
+51274,sec,12.4,PT
+50970,mg/dL,4.4,Phosphate
+50970,mg/dL,3.3,Phosphate
+50960,mg/dL,1.5,Magnesium
+50960,mg/dL,1.5,Magnesium
+50960,mg/dL,1.4,Magnesium
+50960,mg/dL,2.4,Magnesium
+50960,mg/dL,1.4,Magnesium
+50960,mg/dL,2.1,Magnesium
+50960,mg/dL,2.3,Magnesium
+222056,mg,18.863342,Nitroglycerine
+30121,mg,13.155001,Nitroglycerine
+30121,mg,9.599999,Nitroglycerine
+50893,mg/dL,9.2,Calcium Total
+50893,mg/dL,8.4,Calcium Total
+50893,mg/dL,8.1,Calcium Total
+50893,mg/dL,9.6,Calcium Total
+50893,mg/dL,8.4,Calcium Total
+50893,mg/dL,7.9,Calcium Total
+50893,mg/dL,10.1,Calcium Total
+50820,units,7.46,pH Blood
+50820,units,7.48,pH Blood
+50820,units,7.39,pH Blood
+50820,units,7.42,pH Blood
+50868,mEq/L,18.0,Anion Gap
+50868,mEq/L,10.0,Anion Gap
+50868,mEq/L,16.0,Anion Gap
+50868,mEq/L,28.0,Anion Gap
+50868,mEq/L,14.0,Anion Gap
+50868,mEq/L,10.0,Anion Gap
+50818,mm Hg,38.0,PCO2
+225828,ml,75.0,Lactated Ringers
+225828,ml,75.09125,Lactated Ringers
+225828,ml,500.0,Lactated Ringers
+30021,ml,10.0,Lactated Ringers
+30021,ml,5.0,Lactated Ringers
+221794,mg,13.097365,Furosemide
+221794,mg,3.0000002,Furosemide
+221794,mg,5.3195186,Furosemide
+221794,mg,9.999275,Furosemide
+221794,mg,5.502461,Furosemide
+30123,mg,4.0,Furosemide
+40048,ml,20.0,Chest Tube
+225823,ml,99.99999,Dextrose Other
+225823,ml,75.0,Dextrose Other
+225823,ml,125.0,Dextrose Other
+225823,ml,50.167225,Dextrose Other
+225823,ml,90.0,Dextrose Other
+225823,ml,75.0,Dextrose Other
+225823,ml,75.0,Dextrose Other
+30015,ml,70.0,Dextrose Other
+30015,ml,10.0,Dextrose Other
+30015,ml,50.0,Dextrose Other
+30016,ml,5.0,Dextrose Other
+30015,ml,100.0,Dextrose Other
+723,,1.0,GCS_verbal
+723,,1.0,GCS_verbal
+723,,1.0,GCS_verbal
+723,,1.0,GCS_verbal
+723,,1.0,GCS_verbal
+723,,5.0,GCS_verbal
+723,,5.0,GCS_verbal
+223900,,5.0,GCS_verbal
+223900,,5.0,GCS_verbal
+223900,,4.0,GCS_verbal
+223900,,5.0,GCS_verbal
+223900,,1.0,GCS_verbal
+223900,,5.0,GCS_verbal
+223900,,5.0,GCS_verbal
+50804,mEq/L,18.0,Total CO2
+50804,mEq/L,24.0,Total CO2
+50804,mEq/L,22.0,Total CO2
+50804,mEq/L,22.0,Total CO2
+50802,mEq/L,5.0,Base Excess
+50802,mEq/L,-1.0,Base Excess
+50802,mEq/L,2.0,Base Excess
+50802,mEq/L,0.0,Base Excess
+50802,mEq/L,0.0,Base Excess
+50802,mEq/L,0.0,Base Excess
+50802,mEq/L,0.0,Base Excess
+454,,6.0,GCS_motor
+454,,1.0,GCS_motor
+454,,5.0,GCS_motor
+454,,6.0,GCS_motor
+454,,6.0,GCS_motor
+454,,6.0,GCS_motor
+454,,1.0,GCS_motor
+454,,6.0,GCS_motor
+454,,6.0,GCS_motor
+223901,,6.0,GCS_motor
+223901,,6.0,GCS_motor
+223901,,4.0,GCS_motor
+30032,ml,83.3,TPN
+225916,ml,62.49825,TPN
+225917,ml,41.60112,TPN
+30032,ml,82.0,TPN
+184,,4.0,GCS_eye
+184,,4.0,GCS_eye
+184,,3.0,GCS_eye
+184,,4.0,GCS_eye
+184,,4.0,GCS_eye
+184,,4.0,GCS_eye
+220739,,4.0,GCS_eye
+220739,,4.0,GCS_eye
+184,,4.0,GCS_eye
+220739,,4.0,GCS_eye
+184,,4.0,GCS_eye
+184,,2.0,GCS_eye
+184,,4.0,GCS_eye
+220739,,4.0,GCS_eye
+220739,,4.0,GCS_eye
+184,,4.0,GCS_eye
+220739,,3.0,GCS_eye
+220739,,4.0,GCS_eye
+220739,,3.0,GCS_eye
+51237,,1.1,INR
+51237,,1.3,INR
+51237,,1.6,INR
+51237,,1.1,INR
+227525,grams,1.9977274,Calcium Gluconate
+227525,grams,1.3967876,Calcium Gluconate
+50808,mmol/L,1.22,Calcium Free
+50808,mmol/L,1.19,Calcium Free
+50878,IU/L,90.0,AST
+50878,IU/L,1517.0,AST
+50861,IU/L,72.0,ALT
+50863,IU/L,190.0,ALP
+50813,mmol/L,1.5,Lactate
+50813,mmol/L,1.0,Lactate
+30144,ml,30.0,Gastric Meds
+30144,ml,90.0,Gastric Meds
+221289,mg,0.08264461,Epinephrine
+50954,IU/L,347.0,LDH
+228339,mg,30.000002,Amiodarone
+228339,mg,1.0,Amiodarone
+30112,mg,29.999998,Amiodarone
+51244,%,8.7,Lymphocytes
+51244,%,21.0,Lymphocytes
+51256,%,91.0,Neutrophils
+51256,%,91.8,Neutrophils
+225168,ml,4.0,Packed RBC
+225154,mg,7.0011673,Morphine Sulfate
+51254,%,12.0,Monocytes
+51254,%,23.0,Monocytes
+222315,units,2.3999999,Vasopressin
+30051,U,2.3999999,Vasopressin
+40071,ml,750.0,Jackson-Pratt
+221385,mg,1.0,Lorazepam
+226537,mg/dL,88.0,Glucose (Whole Blood)
+224308,,0.0,CRR
+223951,,0.0,CRR
+224308,,0.0,CRR
+224308,,0.0,CRR
+40286,ml,113.0,Ultrafiltrate
+51146,%,0.0,Basophils
+51146,%,0.4,Basophils
+50862,g/dL,2.5,Albumin
+51498, ,1.02,SG Urine
+51498, ,1.025,SG Urine
+30059,ml,20.0,GT Flush
+225797,ml,125.0,Free Water
+30058,ml,100.0,Free Water
+30058,ml,150.0,Free Water
+50812,,1.0,Intubated
+50812,,1.0,Intubated
+50812,,0.0,Intubated
+50812,,0.0,Intubated
+30008,ml,500.0,Albumin 5%
+225798,dose,1.0,Vacomycin
+225798,dose,1.0,Vacomycin
+221828,mg,10.000001,Hydralazine
+227523,ml,50.0,Magnesium Sulfate (Bolus)

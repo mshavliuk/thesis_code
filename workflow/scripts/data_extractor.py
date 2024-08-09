@@ -97,9 +97,7 @@ class DataExtractor:
             admissions, {'HADM_ID', 'SUBJECT_ID', 'HOSPITAL_EXPIRE_FLAG'}) \
             .withColumnsRenamed(self.col_names_map) \
             .withColumn('died', F.col('died').cast('boolean')) \
-            .alias('a') \
-            .join(self.read_icustays(), on='admission_id', how='inner') \
-            .select('a.*')
+            .join(self.read_icustays().select('admission_id').distinct(), on='admission_id', how='inner')
         
         return self._select_known_columns(admissions).cache()
     

@@ -26,7 +26,7 @@ from workflow.scripts.plotting_functions import (
 from workflow.scripts.statistics_job import StatisticsJob
 
 
-class PlottingJob:
+class DataPlottingJob:
     outputs = {
         'distributions': f'{Config.data_dir}/plots/distributions/',
         'journeys': f'{Config.data_dir}/plots/journeys/',

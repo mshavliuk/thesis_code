@@ -30,11 +30,18 @@ from workflow.scripts.spark import get_spark
 
 class DataProcessingJob:
     outputs = {
-        'mortality_labels': f'{Config.data_dir}/preprocessed/mortality_labels.pkl',
-        'events': f'{Config.data_dir}/preprocessed/events.parquet',
-        'train_stay_ids': f'{Config.data_dir}/preprocessed/train_stay_ids.npy',
-        'test_stay_ids': f'{Config.data_dir}/preprocessed/test_stay_ids.npy',
-        'val_stay_ids': f'{Config.data_dir}/preprocessed/val_stay_ids.npy',
+        'train_mortality_labels': f'{Config.data_dir}/preprocessed/train/mortality_labels.parquet',
+        'test_mortality_labels': f'{Config.data_dir}/preprocessed/test/mortality_labels.parquet',
+        'val_mortality_labels': f'{Config.data_dir}/preprocessed/val/mortality_labels.parquet',
+        'train_events': f'{Config.data_dir}/preprocessed/train/events.parquet',
+        'test_events': f'{Config.data_dir}/preprocessed/test/events.parquet',
+        'val_events': f'{Config.data_dir}/preprocessed/val/events.parquet',
+        'train_demographics': f'{Config.data_dir}/preprocessed/train/demographics.parquet',
+        'test_demographics': f'{Config.data_dir}/preprocessed/test/demographics.parquet',
+        'val_demographics': f'{Config.data_dir}/preprocessed/val/demographics.parquet',
+        # 'train_stay_ids': f'{Config.data_dir}/preprocessed/train_stay_ids.npy',
+        # 'test_stay_ids': f'{Config.data_dir}/preprocessed/test_stay_ids.npy',
+        # 'val_stay_ids': f'{Config.data_dir}/preprocessed/val_stay_ids.npy',
     }
     
     def __init__(self, data_extractor: DataExtractor):
@@ -194,7 +201,7 @@ class DataProcessingJob:
         
         for variable, config in filter_configs.items():
             feature_events = events.filter(F.col('variable') == variable)
-            if not config: # no filtering, append as is
+            if not config:  # no filtering, append as is
                 variables.append(feature_events)
             elif config['action'] == 'remove':
                 feature_events = (feature_events.filter(config['valid']))
@@ -214,14 +221,12 @@ class DataProcessingJob:
         events = reduce(DataFrame.unionByName, variables)
         return events
     
-    def add_demographic_events(self, events, icu_stays):
-        age_events = self.extract_age_events(icu_stays)
+    def get_demographics(self, icu_stays) -> DataFrame:
+        ages = self.extract_ages(icu_stays)
         patients = self.data_extractor.read_patients()
-        gender_events = self.extract_gender_events(icu_stays, patients)
+        genders = self.extract_gender_events(icu_stays, patients)
         
-        return events \
-            .unionByName(age_events.withColumn('source', F.array('source'))) \
-            .unionByName(gender_events.withColumn('source', F.array('source')))
+        return ages.unionByName(genders)
     
     def add_variable_name_col(self, events: DataFrame, features):
         variable_names_df = events.sparkSession.createDataFrame(
@@ -243,15 +248,23 @@ class DataProcessingJob:
             .select('event.*', 'stay_id'))
         return with_computed_icu
     
+    def filter_icu_stays(self, events: DataFrame, icu_stays: DataFrame):
+        # TODO: select stays where count is at least 100
+        return events.groupBy('stay_id').count() \
+            .filter(F.col('count') > 1) \
+            .select('stay_id') \
+            .join(icu_stays, on='stay_id', how='inner')
+    
     def use_relative_icu_time(self, events: DataFrame, icu_stays: DataFrame):
+        # TODO: shift so 0 is smallest time in stay (avoid negative minutes)
         with_rel_time = (
             events.alias('event')
             .join(icu_stays, on='stay_id', how='inner')
-            .withColumn('icu_time_minutes', F.round(
+            .withColumn('minute', F.round(
                 (F.col('time') - F.col('time_start')).cast('int') / 60
             ).cast('int'))
             .drop('time')
-            .select('event.*', 'icu_time_minutes'))
+            .select('event.*', 'minute'))
         return with_rel_time
     
     def get_icu_alive_for_24h(self, icu_stays: DataFrame, events: DataFrame, admissions: DataFrame):
@@ -272,31 +285,25 @@ class DataProcessingJob:
         stay_ids_with_events = (
             events
             .join(icu_24_plus, on='stay_id', how='inner')
-            .filter(F.col('icu_time_minutes') < 24 * 60)
+            .filter(F.col('minute') < 24 * 60)
             .select('stay_id')
             .distinct())
         icu_24_plus = icu_24_plus.join(stay_ids_with_events, on='stay_id', how='inner')
         return icu_24_plus
     
-    def extract_age_events(self, icu_stays) -> DataFrame:
-        age_events = icu_stays.select(
+    def extract_ages(self, icu_stays) -> DataFrame:
+        ages = icu_stays.select(
             'stay_id',
-            F.col('age').alias('value'),
+            F.when(F.col('age') > 200, 91.4).otherwise(F.col('age')).alias('value'),
             F.lit('Age').alias('variable'),
-            F.lit(0).alias('icu_time_minutes'),
-            F.lit('years').alias('unit'),
-            F.lit('Demographics').alias('source'),
         )
-        return age_events
+        return ages
     
     def extract_gender_events(self, icu_stays: DataFrame, patients: DataFrame):
         gender_events = icu_stays.join(patients, on='patient_id', how='inner').select(
             'stay_id',
             F.when(F.col('GENDER') == 'M', 0).otherwise(1).alias('value'),
             F.lit('Gender').alias('variable'),
-            F.lit(0).alias('icu_time_minutes'),
-            F.lit(None).alias('unit'),
-            F.lit('Demographics').alias('source'),
         )
         return gender_events
     
@@ -309,50 +316,87 @@ class DataProcessingJob:
         self.logger.info('Processing outliers')
         sanitized_events = self.process_outliers(feature_events, features)
         # filter ICU stays so we don't generate useless gender and age events
-        icu_stays = (self.data_extractor.read_icustays()
-                     .join(sanitized_events.select('stay_id').distinct(),
-                           on='stay_id',
-                           how='inner')).cache()
+        icu_stays = self.data_extractor.read_icustays()
         admissions = self.data_extractor.read_admissions()
         icu_events = self.use_relative_icu_time(sanitized_events, icu_stays)
+        
+        # Saving data for supervised task
         icu_stays_24h = self.get_icu_alive_for_24h(icu_stays, icu_events, admissions)
         
-        self.save_mortality_labels(icu_stays_24h)
-        self.save_icu_splits(icu_stays_24h)
+        split_fractions = {
+            'train': .64,
+            'test': .2,
+            'val': .16,
+        }
+        labeled_splits = self.split_stays_by_patient(icu_stays_24h, split_fractions)
+        self.save_label_splits(labeled_splits)
         
-        icu_events = self.throttle_events(icu_events)
-        # for all icu_stays, not only 24h+
-        all_events = self.add_demographic_events(icu_events, icu_stays)
-        self.save_events(all_events)
+        all_events = self.throttle_events(icu_events)
+        
+        # Saving data for supervised + unsupervised tasks (for all icu_stays, not only 24h+)
+        # Train events are all events from all stays (not only 24h+) except val+test splits
+        train_icu_stay_ids = all_events.select('stay_id') \
+            .subtract(labeled_splits['test'].select('stay_id')) \
+            .subtract(labeled_splits['val'].select('stay_id'))
+        
+        all_split_stay_ids = {
+            'train': train_icu_stay_ids,
+            'test': labeled_splits['test'].select('stay_id'),
+            'val': labeled_splits['val'].select('stay_id'),
+        }
+        
+        demographics = self.get_demographics(icu_stays)
+        
+        self.save_demographic_splits(demographics, all_split_stay_ids)
+        self.save_event_splits(all_events, all_split_stay_ids)
         return all_events
     
-    def save_icu_splits(self, icu_stays_24h: DataFrame):
+    def save_label_splits(self, labeled_splits: dict[str, DataFrame]):
+        for name, df in labeled_splits.items():
+            df.select('stay_id', 'died').toPandas().to_parquet(
+                self.outputs[f'{name}_mortality_labels'])
+    
+    def save_demographic_splits(self, demographics: DataFrame, splits: dict[str, DataFrame]):
+        for name, df in splits.items():
+            demographics.join(df, on='stay_id', how='inner').toPandas().to_parquet(
+                self.outputs[f'{name}_demographics'])
+    
+    def save_event_splits(self, events: DataFrame, splits: dict[str, DataFrame]):
+        for name, df in splits.items():
+            events.join(df, on='stay_id', how='inner').repartition(1).write.parquet(
+                self.outputs[f'{name}_events'], mode='overwrite')
+    
+    def split_stays_by_patient(
+        self, icu_stays_24h: DataFrame, fractions: dict[str, float]
+    ) -> dict[str, DataFrame]:
+        assert sum(fractions.values()) == 1, 'Fractions must sum to 1'
+        icu_stays_24h = icu_stays_24h.cache()
+        # split events on patient level
         patient_ids = icu_stays_24h.select('patient_id').distinct().cache()
-        train_df, test_df, val_df = patient_ids.randomSplit([.64, .2, .16], seed=42)
-        for df, name in zip([train_df, test_df, val_df], ['train', 'test', 'val']):
-            (icu_stays_24h.join(df, on='patient_id', how='inner').select('stay_id')
-             .toPandas().to_numpy().dump(self.outputs[f'{name}_stay_ids']))
-        patient_ids.unpersist()
+        patient_id_splits = patient_ids.randomSplit(list(fractions.values()), seed=42)
+        # check if there are intersections
+        
+        result = {}
+        # convert patients to stays
+        for key, df in zip(fractions.keys(), patient_id_splits):
+            split = icu_stays_24h.join(df, on='patient_id', how='inner').cache()
+            result[key] = split
+        return result
     
-    def save_mortality_labels(self, icu_stays_24h: DataFrame):
-        # TODO: WHY not to store everything as parquets?
-        mortality_labels = (icu_stays_24h.select('stay_id', 'died').toPandas())
-        mortality_labels.to_pickle(self.outputs['mortality_labels'])
-    
-    def save_events(self, events: DataFrame):
-        event_triplets = (events
-        .select(
+    def save_events(self, events: DataFrame, icu_ids: DataFrame, split_name: str):
+        selected_events = (events.select(
             'stay_id',
             'value',
             'variable',
             'source',
-            F.col('icu_time_minutes').alias('minute'),
-        ))
+            'minute',
+        ).join(icu_ids, on='stay_id', how='inner'))
         
-        event_triplets.write.mode('overwrite').parquet(self.outputs['events'])
+        selected_events.write.mode('overwrite').parquet(self.outputs[f'{split_name}_events'])
     
-    def throttle_events(self, events):
-        events = events.groupBy('stay_id', 'icu_time_minutes', 'variable').agg(
+    @cache_result('all_events')
+    def throttle_events(self, events) -> DataFrame:
+        events = events.groupBy('stay_id', 'minute', 'variable').agg(
             F.mean('value').alias('value'),
             F.collect_set('source').alias('source'),
             F.first('unit').alias('unit'),

@@ -9,5 +9,5 @@ dependencies:
   - bioconda::snakemake
   - mamba
   - pipenv
-  - pytorch
+  - pytorch::pytorch==2.4
   - pytorch-cuda=12.1

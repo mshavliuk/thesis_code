@@ -8,13 +8,13 @@ from pyspark.sql import (
 )
 
 from workflow.scripts.data_processing_job import DataProcessingJob
-from workflow.scripts.plotting_job import PlottingJob
+from workflow.scripts.data_plotting_job import DataPlottingJob
 from workflow.scripts.plotting_functions import get_plot_patient_journey
 from workflow.scripts.statistics_job import StatisticsJob
 
 
 @pytest.fixture(scope="function", name='obj')
-def plotting_job_shortcut(plotting_job: PlottingJob):
+def plotting_job_shortcut(plotting_job: DataPlottingJob):
     return plotting_job
 
 
@@ -27,7 +27,7 @@ class TestPlottingJob:
     def statistics(self):
         return pd.read_csv(StatisticsJob.outputs['variables'])
     
-    def test_run(self, obj: PlottingJob):
+    def test_run(self, obj: DataPlottingJob):
         obj.run()
 
     def test_plot_patient_journey_tall(self, events, statistics):

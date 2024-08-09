@@ -1,0 +1,47 @@
+variable,p0.01,p0.99
+GCS_motor,1.0,6.0
+RR,0.0,37.0
+HR,51.0,135.0
+DBP,30.0,101.0
+GCS_verbal,1.0,5.0
+MBP,47.0,126.0
+Glucose (Blood),60.0,344.0
+Temperature,35.0,39.1111
+GCS_eye,1.0,4.0
+O2 Saturation,80.0,100.0
+Glucose (Serum),59.0,358.0
+SBP,72.0,185.0
+PO2,33.0,465.0
+Bicarbonate,13.0,39.0
+Sodium,125.0,152.0
+pH Blood,7.12,7.54
+PTT,21.1,150.0
+WBC,0.6,35.2
+Anion Gap,7.0,26.0
+Magnesium,1.3,3.1
+PT,11.0,44.8
+Calcium Free,0.82,1.44
+Platelet Count,17.0,750.0
+PCO2,24.0,82.0
+MCH,23.3,36.3
+Hgb,6.7,15.4
+Calcium Total,6.5,10.7
+BUN,4.0,116.0
+Hct,20.0,45.0
+Lactate,0.6,14.0
+RDW,12.3,23.5
+INR,0.9,5.4
+Creatinine Blood,0.3,8.3
+MCV,74.0,108.0
+RBC,2.21,5.16
+Chloride,88.0,120.0
+Phosphate,1.4,8.3
+Potassium,2.9,6.3
+MCHC,29.6,37.1
+Total CO2,13.0,44.0
+Base Excess,-14.0,14.0
+Intubated,0.0,1.0
+Urine,0.0,675.0
+PO intake,10.0,600.0
+Lactated Ringers,0.0,1000.0
+D5W,0.0,300.0

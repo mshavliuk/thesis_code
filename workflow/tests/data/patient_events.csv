@@ -1,0 +1,368 @@
+code,unit,time,source,value,group,name
+220621,mg/dL,2111-04-10 02:09:00,chartevents,117.0,Glucose (Serum),Glucose (serum)
+211,BPM,2111-04-09 21:00:00,chartevents,101.0,HR,Heart Rate
+618,BPM,2111-04-09 21:00:00,chartevents,17.0,RR,Respiratory Rate
+646,%,2111-04-09 21:00:00,chartevents,97.0,O2 Saturation,SpO2
+807,,2111-04-09 21:00:00,chartevents,133.0,Glucose (Blood),Fingerstick Glucose
+52,mmHg,2111-04-09 22:00:00,chartevents,90.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 22:00:00,chartevents,96.0,HR,Heart Rate
+618,BPM,2111-04-09 22:00:00,chartevents,21.0,RR,Respiratory Rate
+646,%,2111-04-09 22:00:00,chartevents,98.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 23:00:00,chartevents,94.0,MBP,Arterial BP Mean
+646,%,2111-04-10 11:00:00,chartevents,95.0,O2 Saturation,SpO2
+677,Deg. C,2111-04-10 11:00:00,chartevents,37.0,Temperature,Temperature C (calc)
+678,Deg. F,2111-04-10 11:00:00,chartevents,37.0,Temperature,Temperature F
+723,,2111-04-10 11:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-10 13:00:00,chartevents,89.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 13:00:00,chartevents,84.0,HR,Heart Rate
+618,BPM,2111-04-10 13:00:00,chartevents,30.0,RR,Respiratory Rate
+646,%,2111-04-10 13:00:00,chartevents,95.0,O2 Saturation,SpO2
+618,BPM,2111-04-10 13:30:00,chartevents,23.0,RR,Respiratory Rate
+646,%,2111-04-10 13:30:00,chartevents,96.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 14:00:00,chartevents,100.0,MBP,Arterial BP Mean
+184,,2111-04-09 14:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-09 14:00:00,chartevents,99.0,HR,Heart Rate
+454,,2111-04-09 14:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-09 14:00:00,chartevents,22.0,RR,Respiratory Rate
+646,%,2111-04-09 14:00:00,chartevents,100.0,O2 Saturation,SpO2
+618,BPM,2111-04-09 17:30:00,chartevents,23.0,RR,Respiratory Rate
+646,%,2111-04-09 17:30:00,chartevents,97.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 19:00:00,chartevents,85.0,MBP,Arterial BP Mean
+184,,2111-04-09 19:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-09 19:00:00,chartevents,93.0,HR,Heart Rate
+454,,2111-04-09 19:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-09 19:00:00,chartevents,20.0,RR,Respiratory Rate
+646,%,2111-04-09 19:00:00,chartevents,100.0,O2 Saturation,SpO2
+677,Deg. C,2111-04-09 19:00:00,chartevents,36.4444,Temperature,Temperature C (calc)
+211,BPM,2111-04-10 08:00:00,chartevents,71.0,HR,Heart Rate
+618,BPM,2111-04-10 08:00:00,chartevents,23.0,RR,Respiratory Rate
+646,%,2111-04-10 08:00:00,chartevents,96.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 09:00:00,chartevents,91.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 09:00:00,chartevents,81.0,HR,Heart Rate
+618,BPM,2111-04-10 09:00:00,chartevents,27.0,RR,Respiratory Rate
+646,%,2111-04-10 09:00:00,chartevents,97.0,O2 Saturation,SpO2
+807,,2111-04-10 09:00:00,chartevents,111.0,Glucose (Blood),Fingerstick Glucose
+52,mmHg,2111-04-10 10:00:00,chartevents,100.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 10:00:00,chartevents,82.0,HR,Heart Rate
+618,BPM,2111-04-10 10:00:00,chartevents,28.0,RR,Respiratory Rate
+646,%,2111-04-10 10:00:00,chartevents,96.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 11:00:00,chartevents,105.0,MBP,Arterial BP Mean
+184,,2111-04-10 11:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-10 11:00:00,chartevents,91.0,HR,Heart Rate
+211,BPM,2111-04-09 15:30:00,chartevents,110.0,HR,Heart Rate
+618,BPM,2111-04-09 15:30:00,chartevents,19.0,RR,Respiratory Rate
+646,%,2111-04-09 15:30:00,chartevents,99.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 16:00:00,chartevents,105.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 16:00:00,chartevents,106.0,HR,Heart Rate
+618,BPM,2111-04-09 16:00:00,chartevents,26.0,RR,Respiratory Rate
+646,%,2111-04-09 16:00:00,chartevents,97.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 17:00:00,chartevents,95.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 17:00:00,chartevents,107.0,HR,Heart Rate
+184,,2111-04-10 07:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-10 07:00:00,chartevents,66.0,HR,Heart Rate
+454,,2111-04-10 07:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-10 07:00:00,chartevents,21.0,RR,Respiratory Rate
+646,%,2111-04-10 07:00:00,chartevents,95.0,O2 Saturation,SpO2
+677,Deg. C,2111-04-10 07:00:00,chartevents,36.4444,Temperature,Temperature C (calc)
+678,Deg. F,2111-04-10 07:00:00,chartevents,36.444443,Temperature,Temperature F
+723,,2111-04-10 07:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-10 08:00:00,chartevents,85.0,MBP,Arterial BP Mean
+618,BPM,2111-04-09 17:00:00,chartevents,21.0,RR,Respiratory Rate
+646,%,2111-04-09 17:00:00,chartevents,94.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 17:15:00,chartevents,63.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 17:15:00,chartevents,51.0,HR,Heart Rate
+618,BPM,2111-04-09 17:15:00,chartevents,23.0,RR,Respiratory Rate
+646,%,2111-04-09 17:15:00,chartevents,97.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 17:30:00,chartevents,88.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 17:30:00,chartevents,80.0,HR,Heart Rate
+52,mmHg,2111-04-10 01:00:00,chartevents,86.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 01:00:00,chartevents,79.0,HR,Heart Rate
+618,BPM,2111-04-10 01:00:00,chartevents,17.0,RR,Respiratory Rate
+646,%,2111-04-10 01:00:00,chartevents,96.0,O2 Saturation,SpO2
+811,,2111-04-10 01:09:00,chartevents,117.0,Glucose (Blood),Glucose (70-105)
+1529,,2111-04-10 01:09:00,chartevents,117.0,Glucose (Blood),Glucose
+52,mmHg,2111-04-10 02:00:00,chartevents,92.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 02:00:00,chartevents,85.0,HR,Heart Rate
+618,BPM,2111-04-10 02:00:00,chartevents,17.0,RR,Respiratory Rate
+646,%,2111-04-10 02:00:00,chartevents,96.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 04:00:00,chartevents,92.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 04:00:00,chartevents,78.0,HR,Heart Rate
+618,BPM,2111-04-10 04:00:00,chartevents,19.0,RR,Respiratory Rate
+646,%,2111-04-10 04:00:00,chartevents,98.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 05:00:00,chartevents,91.0,MBP,Arterial BP Mean
+184,,2111-04-10 05:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-10 05:00:00,chartevents,75.0,HR,Heart Rate
+454,,2111-04-10 05:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-10 05:00:00,chartevents,21.0,RR,Respiratory Rate
+646,%,2111-04-10 05:00:00,chartevents,98.0,O2 Saturation,SpO2
+723,,2111-04-10 05:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-10 06:00:00,chartevents,90.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 06:00:00,chartevents,90.0,HR,Heart Rate
+618,BPM,2111-04-10 06:00:00,chartevents,21.0,RR,Respiratory Rate
+646,%,2111-04-10 06:00:00,chartevents,96.0,O2 Saturation,SpO2
+646,%,2111-04-10 06:30:00,chartevents,95.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 15:00:00,chartevents,105.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 15:00:00,chartevents,108.0,HR,Heart Rate
+618,BPM,2111-04-09 15:00:00,chartevents,24.0,RR,Respiratory Rate
+646,%,2111-04-09 15:00:00,chartevents,100.0,O2 Saturation,SpO2
+811,,2111-04-09 15:00:00,chartevents,154.0,Glucose (Blood),Glucose (70-105)
+1529,,2111-04-09 15:00:00,chartevents,154.0,Glucose (Blood),Glucose
+52,mmHg,2111-04-09 15:15:00,chartevents,98.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 15:15:00,chartevents,108.0,HR,Heart Rate
+618,BPM,2111-04-09 15:15:00,chartevents,25.0,RR,Respiratory Rate
+646,%,2111-04-09 15:15:00,chartevents,95.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 15:20:00,chartevents,102.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 15:20:00,chartevents,113.0,HR,Heart Rate
+618,BPM,2111-04-09 15:20:00,chartevents,27.0,RR,Respiratory Rate
+646,%,2111-04-09 15:20:00,chartevents,97.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 15:25:00,chartevents,101.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 15:25:00,chartevents,108.0,HR,Heart Rate
+618,BPM,2111-04-09 15:25:00,chartevents,20.0,RR,Respiratory Rate
+646,%,2111-04-09 15:25:00,chartevents,99.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 15:30:00,chartevents,106.0,MBP,Arterial BP Mean
+52,mmHg,2111-04-10 07:00:00,chartevents,85.0,MBP,Arterial BP Mean
+184,,2111-04-09 23:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-09 23:00:00,chartevents,96.0,HR,Heart Rate
+454,,2111-04-09 23:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-09 23:00:00,chartevents,26.0,RR,Respiratory Rate
+646,%,2111-04-09 23:00:00,chartevents,96.0,O2 Saturation,SpO2
+677,Deg. C,2111-04-09 23:00:00,chartevents,36.7222,Temperature,Temperature C (calc)
+678,Deg. F,2111-04-09 23:00:00,chartevents,36.72222,Temperature,Temperature F
+723,,2111-04-09 23:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-10 00:00:00,chartevents,88.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 00:00:00,chartevents,97.0,HR,Heart Rate
+618,BPM,2111-04-10 00:00:00,chartevents,18.0,RR,Respiratory Rate
+646,%,2111-04-10 00:00:00,chartevents,95.0,O2 Saturation,SpO2
+646,%,2111-04-10 13:45:00,chartevents,90.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 14:00:00,chartevents,93.0,MBP,Arterial BP Mean
+211,BPM,2111-04-10 14:00:00,chartevents,96.0,HR,Heart Rate
+618,BPM,2111-04-10 14:00:00,chartevents,32.0,RR,Respiratory Rate
+646,%,2111-04-10 14:00:00,chartevents,94.0,O2 Saturation,SpO2
+52,mmHg,2111-04-10 03:00:00,chartevents,95.0,MBP,Arterial BP Mean
+677,Deg. C,2111-04-09 14:00:00,chartevents,36.8333,Temperature,Temperature C (calc)
+678,Deg. F,2111-04-09 14:00:00,chartevents,36.833336,Temperature,Temperature F
+723,,2111-04-09 14:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-09 14:15:00,chartevents,99.0,MBP,Arterial BP Mean
+618,BPM,2111-04-09 14:15:00,chartevents,29.0,RR,Respiratory Rate
+646,%,2111-04-09 14:15:00,chartevents,99.0,O2 Saturation,SpO2
+184,,2111-04-10 03:00:00,chartevents,4.0,GCS_eye,Eye Opening
+211,BPM,2111-04-10 03:00:00,chartevents,84.0,HR,Heart Rate
+454,,2111-04-10 03:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-10 03:00:00,chartevents,24.0,RR,Respiratory Rate
+646,%,2111-04-10 03:00:00,chartevents,97.0,O2 Saturation,SpO2
+677,Deg. C,2111-04-10 03:00:00,chartevents,36.7222,Temperature,Temperature C (calc)
+678,Deg. F,2111-04-10 03:00:00,chartevents,36.72222,Temperature,Temperature F
+723,,2111-04-10 03:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-09 14:30:00,chartevents,96.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 14:30:00,chartevents,101.0,HR,Heart Rate
+618,BPM,2111-04-09 14:30:00,chartevents,26.0,RR,Respiratory Rate
+646,%,2111-04-09 14:30:00,chartevents,98.0,O2 Saturation,SpO2
+678,Deg. F,2111-04-09 19:00:00,chartevents,36.444443,Temperature,Temperature F
+723,,2111-04-09 19:00:00,chartevents,5.0,GCS_verbal,Verbal Response
+52,mmHg,2111-04-09 20:00:00,chartevents,93.0,MBP,Arterial BP Mean
+211,BPM,2111-04-09 20:00:00,chartevents,105.0,HR,Heart Rate
+618,BPM,2111-04-09 20:00:00,chartevents,16.0,RR,Respiratory Rate
+646,%,2111-04-09 20:00:00,chartevents,96.0,O2 Saturation,SpO2
+52,mmHg,2111-04-09 21:00:00,chartevents,91.0,MBP,Arterial BP Mean
+454,,2111-04-10 11:00:00,chartevents,6.0,GCS_motor,Motor Response
+618,BPM,2111-04-10 11:00:00,chartevents,33.0,RR,Respiratory Rate
+51,mmHg,2111-04-09 14:00:00,chartevents,137.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 14:15:00,chartevents,141.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 08:00:00,chartevents,120.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 09:00:00,chartevents,130.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 10:00:00,chartevents,136.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 11:00:00,chartevents,149.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 14:30:00,chartevents,136.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 15:00:00,chartevents,149.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 15:15:00,chartevents,136.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 15:20:00,chartevents,137.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 15:25:00,chartevents,140.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 15:30:00,chartevents,142.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 13:00:00,chartevents,130.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 13:30:00,chartevents,133.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 14:00:00,chartevents,135.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 00:00:00,chartevents,121.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 01:00:00,chartevents,122.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 02:00:00,chartevents,127.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 03:00:00,chartevents,129.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 04:00:00,chartevents,125.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 05:00:00,chartevents,126.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 06:00:00,chartevents,125.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-10 07:00:00,chartevents,119.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 16:00:00,chartevents,144.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 17:00:00,chartevents,129.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 17:15:00,chartevents,87.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 17:30:00,chartevents,113.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 19:00:00,chartevents,106.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 20:00:00,chartevents,130.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 21:00:00,chartevents,124.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 22:00:00,chartevents,125.0,SBP,Arterial BP [Systolic]
+51,mmHg,2111-04-09 23:00:00,chartevents,131.0,SBP,Arterial BP [Systolic]
+8368,mmHg,2111-04-10 03:00:00,chartevents,75.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 04:00:00,chartevents,73.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 05:00:00,chartevents,71.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 06:00:00,chartevents,69.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 07:00:00,chartevents,66.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 08:00:00,chartevents,66.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 09:00:00,chartevents,73.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 10:00:00,chartevents,79.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 11:00:00,chartevents,81.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 14:00:00,chartevents,75.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 14:15:00,chartevents,80.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 19:00:00,chartevents,70.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 20:00:00,chartevents,74.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 21:00:00,chartevents,73.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 22:00:00,chartevents,71.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 23:00:00,chartevents,74.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 00:00:00,chartevents,71.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 01:00:00,chartevents,68.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 02:00:00,chartevents,72.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 14:30:00,chartevents,76.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 13:00:00,chartevents,67.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 13:30:00,chartevents,67.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-10 14:00:00,chartevents,70.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 15:00:00,chartevents,83.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 15:15:00,chartevents,78.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 15:20:00,chartevents,82.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 15:25:00,chartevents,79.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 15:30:00,chartevents,87.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 16:00:00,chartevents,85.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 17:00:00,chartevents,78.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 17:15:00,chartevents,50.0,DBP,Arterial BP [Diastolic]
+8368,mmHg,2111-04-09 17:30:00,chartevents,72.0,DBP,Arterial BP [Diastolic]
+50868,mEq/L,2111-04-09 09:16:00,labevents,13.0,Anion Gap,Anion Gap
+50882,mEq/L,2111-04-09 09:16:00,labevents,28.0,Bicarbonate,Bicarbonate
+50893,mg/dL,2111-04-09 09:16:00,labevents,8.8,Calcium Total,"Calcium, Total"
+50902,mEq/L,2111-04-09 09:16:00,labevents,102.0,Chloride,Chloride
+50912,mg/dL,2111-04-09 09:16:00,labevents,0.7,Creatinine Blood,Creatinine
+50931,mg/dL,2111-04-09 09:16:00,labevents,140.0,Glucose (Serum),Glucose
+50960,mg/dL,2111-04-09 09:16:00,labevents,2.1,Magnesium,Magnesium
+50970,mg/dL,2111-04-09 09:16:00,labevents,4.0,Phosphate,Phosphate
+50971,mEq/L,2111-04-09 09:16:00,labevents,4.0,Potassium,Potassium
+50983,mEq/L,2111-04-09 09:16:00,labevents,139.0,Sodium,Sodium
+51006,mg/dL,2111-04-09 09:16:00,labevents,13.0,BUN,Urea Nitrogen
+51221,%,2111-04-09 09:16:00,labevents,37.5,Hct,Hematocrit
+51222,g/dL,2111-04-09 09:16:00,labevents,12.8,Hgb,Hemoglobin
+51237,,2111-04-09 09:16:00,labevents,1.0,INR,INR(PT)
+51248,pg,2111-04-09 09:16:00,labevents,30.7,MCH,MCH
+51249,%,2111-04-09 09:16:00,labevents,34.1,MCHC,MCHC
+51250,fL,2111-04-09 09:16:00,labevents,90.0,MCV,MCV
+51265,K/uL,2111-04-09 09:16:00,labevents,368.0,Platelet Count,Platelet Count
+51274,sec,2111-04-09 09:16:00,labevents,12.3,PT,PT
+51275,sec,2111-04-09 09:16:00,labevents,30.0,PTT,PTT
+51277,%,2111-04-09 09:16:00,labevents,14.7,RDW,RDW
+51279,m/uL,2111-04-09 09:16:00,labevents,4.17,RBC,Red Blood Cells
+51301,K/uL,2111-04-09 09:16:00,labevents,10.3,WBC,White Blood Cells
+50802,mEq/L,2111-04-09 09:20:00,labevents,1.0,Base Excess,Base Excess
+50804,mEq/L,2111-04-09 09:20:00,labevents,32.0,Total CO2,Calculated Total CO2
+50806,mEq/L,2111-04-09 09:20:00,labevents,99.0,Chloride,"Chloride, Whole Blood"
+50808,mmol/L,2111-04-09 09:20:00,labevents,1.23,Calcium Free,Free Calcium
+50809,mg/dL,2111-04-09 09:20:00,labevents,140.0,Glucose (Blood),Glucose
+50810,%,2111-04-09 09:20:00,labevents,42.0,Hct,"Hematocrit, Calculated"
+50811,g/dL,2111-04-09 09:20:00,labevents,14.1,Hgb,Hemoglobin
+50812,,2111-04-09 09:20:00,labevents,0.0,Intubated,Intubated
+50813,mmol/L,2111-04-09 09:20:00,labevents,0.9,Lactate,Lactate
+50817,%,2111-04-09 09:20:00,labevents,94.0,O2 Saturation,Oxygen Saturation
+50818,mm Hg,2111-04-09 09:20:00,labevents,66.0,PCO2,pCO2
+50820,units,2111-04-09 09:20:00,labevents,7.28,pH Blood,pH
+50821,mm Hg,2111-04-09 09:20:00,labevents,84.0,PO2,pO2
+50822,mEq/L,2111-04-09 09:20:00,labevents,3.8,Potassium,"Potassium, Whole Blood"
+50824,mEq/L,2111-04-09 09:20:00,labevents,136.0,Sodium,"Sodium, Whole Blood"
+50802,mEq/L,2111-04-09 10:24:00,labevents,2.0,Base Excess,Base Excess
+50804,mEq/L,2111-04-09 10:24:00,labevents,31.0,Total CO2,Calculated Total CO2
+50810,%,2111-04-09 10:24:00,labevents,37.0,Hct,"Hematocrit, Calculated"
+50811,g/dL,2111-04-09 10:24:00,labevents,12.4,Hgb,Hemoglobin
+50812,,2111-04-09 10:24:00,labevents,0.0,Intubated,Intubated
+50817,%,2111-04-09 10:24:00,labevents,98.0,O2 Saturation,Oxygen Saturation
+50818,mm Hg,2111-04-09 10:24:00,labevents,55.0,PCO2,pCO2
+50820,units,2111-04-09 10:24:00,labevents,7.34,pH Blood,pH
+50821,mm Hg,2111-04-09 10:24:00,labevents,147.0,PO2,pO2
+51221,%,2111-04-09 14:43:00,labevents,34.8,Hct,Hematocrit
+50868,mEq/L,2111-04-10 01:09:00,labevents,10.0,Anion Gap,Anion Gap
+50882,mEq/L,2111-04-10 01:09:00,labevents,30.0,Bicarbonate,Bicarbonate
+50893,mg/dL,2111-04-10 01:09:00,labevents,9.1,Calcium Total,"Calcium, Total"
+50902,mEq/L,2111-04-10 01:09:00,labevents,104.0,Chloride,Chloride
+50912,mg/dL,2111-04-10 01:09:00,labevents,0.6,Creatinine Blood,Creatinine
+50931,mg/dL,2111-04-10 01:09:00,labevents,117.0,Glucose (Serum),Glucose
+50960,mg/dL,2111-04-10 01:09:00,labevents,2.0,Magnesium,Magnesium
+50970,mg/dL,2111-04-10 01:09:00,labevents,4.2,Phosphate,Phosphate
+50971,mEq/L,2111-04-10 01:09:00,labevents,4.2,Potassium,Potassium
+50983,mEq/L,2111-04-10 01:09:00,labevents,140.0,Sodium,Sodium
+51006,mg/dL,2111-04-10 01:09:00,labevents,15.0,BUN,Urea Nitrogen
+51221,%,2111-04-10 01:09:00,labevents,33.7,Hct,Hematocrit
+51222,g/dL,2111-04-10 01:09:00,labevents,11.6,Hgb,Hemoglobin
+51248,pg,2111-04-10 01:09:00,labevents,30.1,MCH,MCH
+51249,%,2111-04-10 01:09:00,labevents,34.5,MCHC,MCHC
+51250,fL,2111-04-10 01:09:00,labevents,87.0,MCV,MCV
+51265,K/uL,2111-04-10 01:09:00,labevents,368.0,Platelet Count,Platelet Count
+51277,%,2111-04-10 01:09:00,labevents,14.8,RDW,RDW
+51279,m/uL,2111-04-10 01:09:00,labevents,3.86,RBC,Red Blood Cells
+51301,K/uL,2111-04-10 01:09:00,labevents,12.5,WBC,White Blood Cells
+50868,mEq/L,2111-04-11 06:45:00,labevents,16.0,Anion Gap,Anion Gap
+50882,mEq/L,2111-04-11 06:45:00,labevents,28.0,Bicarbonate,Bicarbonate
+50893,mg/dL,2111-04-11 06:45:00,labevents,9.0,Calcium Total,"Calcium, Total"
+50902,mEq/L,2111-04-11 06:45:00,labevents,102.0,Chloride,Chloride
+50912,mg/dL,2111-04-11 06:45:00,labevents,0.6,Creatinine Blood,Creatinine
+50931,mg/dL,2111-04-11 06:45:00,labevents,89.0,Glucose (Serum),Glucose
+50960,mg/dL,2111-04-11 06:45:00,labevents,2.2,Magnesium,Magnesium
+50970,mg/dL,2111-04-11 06:45:00,labevents,3.0,Phosphate,Phosphate
+50971,mEq/L,2111-04-11 06:45:00,labevents,3.8,Potassium,Potassium
+50983,mEq/L,2111-04-11 06:45:00,labevents,142.0,Sodium,Sodium
+51006,mg/dL,2111-04-11 06:45:00,labevents,11.0,BUN,Urea Nitrogen
+51221,%,2111-04-11 06:45:00,labevents,33.6,Hct,Hematocrit
+51222,g/dL,2111-04-11 06:45:00,labevents,11.8,Hgb,Hemoglobin
+51248,pg,2111-04-11 06:45:00,labevents,30.4,MCH,MCH
+51249,%,2111-04-11 06:45:00,labevents,35.0,MCHC,MCHC
+51250,fL,2111-04-11 06:45:00,labevents,87.0,MCV,MCV
+51265,K/uL,2111-04-11 06:45:00,labevents,309.0,Platelet Count,Platelet Count
+51277,%,2111-04-11 06:45:00,labevents,14.9,RDW,RDW
+51279,m/uL,2111-04-11 06:45:00,labevents,3.87,RBC,Red Blood Cells
+51301,K/uL,2111-04-11 06:45:00,labevents,7.7,WBC,White Blood Cells
+40055,ml,2111-04-09 15:30:00,outputevents,60.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 16:00:00,outputevents,32.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 17:00:00,outputevents,35.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 18:00:00,outputevents,42.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 18:30:00,outputevents,15.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 20:00:00,outputevents,100.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 21:00:00,outputevents,35.0,Urine,Urine Out Foley
+40055,ml,2111-04-09 23:00:00,outputevents,80.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 00:00:00,outputevents,40.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 02:00:00,outputevents,100.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 04:00:00,outputevents,60.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 06:00:00,outputevents,40.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 07:00:00,outputevents,80.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 08:00:00,outputevents,45.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 09:00:00,outputevents,80.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 10:00:00,outputevents,110.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 11:00:00,outputevents,45.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 12:00:00,outputevents,120.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 14:00:00,outputevents,100.0,Urine,Urine Out Foley
+40055,ml,2111-04-10 15:00:00,outputevents,140.0,Urine,Urine Out Foley
+30056,ml,2111-04-10 15:00:00,inputevents,30.0,PO intake,Po Intake
+30013,ml,2111-04-10 00:00:00,inputevents,100.0,D5W,D5W
+30013,ml,2111-04-10 02:00:00,inputevents,200.0,D5W,D5W
+30013,ml,2111-04-10 08:00:00,inputevents,100.0,D5W,D5W
+30021,ml,2111-04-10 05:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 06:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 07:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 08:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 09:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 10:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 11:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 12:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 14:00:00,inputevents,120.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 15:00:00,inputevents,60.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 15:00:00,inputevents,0.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 15:30:00,inputevents,50.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 16:00:00,inputevents,50.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 17:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 18:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 20:00:00,inputevents,200.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 21:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 22:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-09 23:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 00:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 01:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 02:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 03:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers
+30021,ml,2111-04-10 04:00:00,inputevents,100.0,Lactated Ringers,Lactated Ringers

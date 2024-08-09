@@ -1,10 +1,10 @@
 import itertools
 import logging
 import os
+from functools import reduce
 from pathlib import Path
 from typing import Iterable
 
-import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 from pyspark.sql import (
@@ -37,19 +37,24 @@ class StatisticsJob:
         Stores the results in the statistics directory as csv files.
         :return:
         """
+        train_df = spark.read.parquet(DataProcessingJob.outputs[f"train_events"])
+        stay_ids = train_df.select('stay_id').distinct().sample(0.001)
+        train_df.join(stay_ids, on='stay_id', how='inner').toPandas().to_parquet(
+            '/home/user/projects/thesis_code/src/tests/data/events.parquet')
         
         features = get_features()
         items = self.data_extractor.read_items()
         features_df = self.compute_features_statistics(features, items)
         self.save_as(features_df, 'features')
-
-        # training data statistics: train/test/val lengths, death prevalence
-        train, test, val = (np.load(
-            DataProcessingJob.outputs[f"{split}_stay_ids"], allow_pickle=True) for split in
-            ('train', 'test', 'val'))
-
-        labels = pd.read_pickle(DataProcessingJob.outputs['mortality_labels'])
-        training = self.compute_training_statistics(train, test, val, labels)
+        
+        # training data statistics: train/test/val lengths, death prevalence\
+        splits = ('train', 'test', 'val')
+        labels, events = {}, {}
+        for split in splits:
+            labels[split] = pd.read_pickle(DataProcessingJob.outputs[f"{split}_mortality_labels"])
+            events[split] = pd.read_parquet(DataProcessingJob.outputs[f"{split}_events"])
+        
+        training = self.compute_training_statistics(labels, events)
         self.save_as(training, 'training')
         
         data_dir = Path(Config.data_dir) / 'raw'
@@ -57,13 +62,15 @@ class StatisticsJob:
         data_files = data_dir.glob('*.parquet')
         raw_dataset = self.compute_raw_dataset_statistics(data_files)
         self.save_as(raw_dataset, 'raw_dataset')
-        
-        events = self.spark.read.parquet(DataProcessingJob.outputs['events'])
-        variables = self.compute_variables_statistics(events)
+        all_events = []
+        for split in splits:
+            all_events.append(spark.read.parquet(DataProcessingJob.outputs[f"{split}_events"]))
+        all_events = reduce(DataFrame.unionByName, all_events)
+        variables = self.compute_variables_statistics(all_events)
         self.save_as(variables, 'variables')
         
         icustays = self.data_extractor.read_icustays()
-        patient_journey_stats = self.compute_patient_journey_statistics(events, icustays)
+        patient_journey_stats = self.compute_patient_journey_statistics(all_events, icustays)
         self.save_as(patient_journey_stats, 'patient_journey')
         
         self.logger.info('Statistics computed and saved.')
@@ -152,15 +159,21 @@ class StatisticsJob:
         result.columns = ['statistic', 'value']
         return result
     
-    def compute_training_statistics(self, train, test, val, labels):
-        death_prevalence = labels['died'].mean()
+    def compute_training_statistics(
+        self,
+        labels: dict[str, pd.DataFrame],
+        events: dict[str, pd.DataFrame]
+    ):
+        data = []
+        for split, df in labels.items():
+            data.append((f"Supervised{split.capitalize()}DeathPrevalence", df['died'].mean()))
+            data.append((f"Supervised{split.capitalize()}LengthLabels", df.shape[0]))
+            num_events = events[split]['stay_id'].isin(df['stay_id']).sum()
+            data.append((f"Supervised{split.capitalize()}LengthEvents", num_events))
         
-        return pd.DataFrame([
-            ('TrainSplitLength', len(train)),
-            ('TestSplitLength', len(test)),
-            ('ValSplitLength', len(val)),
-            ('DeathPrevalence', death_prevalence),
-        ], columns=['statistic', 'value'], dtype=object)
+        for split, df in events.items():
+            data.append((f"Unsupervised{split.capitalize()}LengthEvents", df.shape[0]))
+        return pd.DataFrame(data, columns=['statistic', 'value'], dtype=object)
     
     def compute_raw_dataset_statistics(self, parquets: Iterable[Path]):
         def get_row(parquet_file: Path):
@@ -199,7 +212,6 @@ class StatisticsJob:
         events = DataProcessingJob.process_outliers.get_cached_df(self.spark)
         print(f"Num sanitized events")
         events.groupBy('source').count().show()
-
     
     def hourly_inputevents_mv(self):
         dpj = DataProcessingJob(self.data_extractor)
@@ -207,17 +219,17 @@ class StatisticsJob:
         total_count = inputevents_mv.count()
         print(f"Total events: {total_count}")
         
-        hour_plus_count = inputevents_mv.filter((F.col('time_end') - F.col('time_start')).cast('int') > 3600).count()
+        hour_plus_count = inputevents_mv.filter(
+            (F.col('time_end') - F.col('time_start')).cast('int') > 3600).count()
         print(f"Num events longer than 1h: {hour_plus_count}")
         
         inputevents_mv = dpj.distribute_events_hourly(inputevents_mv)
-        hourly_count =inputevents_mv.count()
+        hourly_count = inputevents_mv.count()
         print(hourly_count)
-        
+    
     def icustays(self):
         icustays = self.data_extractor.read_icustays()
         print(f"Num icustays {icustays.count()}")
-
     
     def labevents(self):
         labevents = self.data_extractor.read_labevents()
@@ -227,7 +239,7 @@ class StatisticsJob:
         sanitized_labevents = sanitized_labevents.filter(F.col('source') == 'labevents')
         sanitized_labevents.groupBy('variable').count().show(1000)
         print(f"Num sanitized labevents {sanitized_labevents.count()}")
-        
+    
     def chartevents(self):
         chartevents = self.data_extractor.read_chartevents()
         print(f"Num raw chartevents {chartevents.count()}")
@@ -236,6 +248,7 @@ class StatisticsJob:
         sanitized_chartevents = sanitized_chartevents.filter(F.col('source') == 'chartevents')
         sanitized_chartevents.groupBy('variable').count().show(1000)
         print(f"Num sanitized chartevents {sanitized_chartevents.count()}")
+
 
 if __name__ == '__main__':
     # spark = SparkSession.builder.appName('StatisticsJob').getOrCreate()

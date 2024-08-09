@@ -40,7 +40,7 @@ class TestDataExtractor:
         assert result.first() is not None
     
     @pytest.mark.parametrize("method_name", all_methods)
-    @pytest.mark.skipif(True, reason="Used for debugging")
+    # @pytest.mark.skipif(True, reason="Used for debugging")
     def test_compute_df_size(self, data_extractor: DataExtractor, method_name: str):
         method = getattr(data_extractor, method_name)
         result = method()

@@ -7,6 +7,9 @@ name = "pypi"
 seaborn = "*"
 matplotlib = "*"
 scipy = "*"
+numba = "*"
+lightning = "*"
+wandb = "*"
 
 [dev-packages]
 pytest = "*"
@@ -14,6 +17,7 @@ pylint = "*"
 flake8 = "*"
 black = "*"
 pyright = "*"
+line_profiler = "*"
 
 [requires]
 python_version = "3.12"
