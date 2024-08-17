@@ -1,0 +1,59 @@
+metric: &metric val_epoch_loss
+metric_mode: &metric_mode min
+
+_common_dataset_: &common_dataset
+  max_events: 880
+  max_minute: 1440 # 24 * 60
+  min_input_minutes: 720 # 12*60
+
+data_module:
+  train:
+    batch_size: 8
+    path: ./src/util/tests/data
+    variables_dropout: 0.2
+    <<: *common_dataset
+
+  val:
+    batch_size: 8
+    path: ./src/util/tests/data
+    variables_dropout: 0
+    <<: *common_dataset
+
+  test:
+    batch_size: 8
+    path: ./src/util/tests/data
+    variables_dropout: 0
+    <<: *common_dataset
+
+
+trainer:
+  max_epochs: 15
+  gradient_clip_val: 0.3
+
+
+optimizer:
+  lr: 5.0e-4
+
+checkpoint_callback:
+  monitor: *metric
+  mode: *metric_mode
+  dirpath: /home/user/.cache/thesis/dev-checkpoints/pretrain
+
+early_stop_callback:
+  monitor: *metric
+  mode: *metric_mode
+  patience: 5
+
+train_batch_size: 8
+val_batch_size: 8
+results_dir: /home/user/.cache/thesis/dev-results
+
+model:
+  #  demographics_num: train_data.num_demographics,
+  #  features_num: train_data.num_variables,
+  hid_dim: 64
+  num_layers: 2
+  num_heads: 16
+  dropout: 0.2
+  attention_dropout: 0.2
+  head: 'forecast'

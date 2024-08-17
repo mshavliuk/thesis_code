@@ -12,7 +12,7 @@ from src.util.data_loader import (
     Batch,
     DataLoader,
 )
-from src.util.trainer import MaskedMSELoss
+from src.models.losses import MaskedMSELoss
 
 HEAD_CONFIGS = {
     'forecast': {'head': 'forecast'},
@@ -78,6 +78,8 @@ class TestStrats:
     # @pytest.mark.parametrize('config', HEAD_CONFIGS.values(), indirect=True, ids=HEAD_CONFIGS.keys())
     @pytest.mark.parametrize('device', ['cpu', 'cuda'], indirect=True)
     def test_compile(self, model: Strats, batch: Batch, device):
+        # TODO: torch.jit.script(model)
+        
         model = model.to(device)
         model = torch.compile(model)
         output = model(**batch.model_inputs)

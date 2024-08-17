@@ -1,8 +1,9 @@
 import pytest
 
 from src.util.dataset import (
-    Dataset,
+    PretrainDataset,
     DatasetConfig,
+    FinetuneDataset,
 )
 
 
@@ -21,11 +22,22 @@ def dataset_config():
 
 
 @pytest.fixture(scope='module')
-def dataset(dataset_config: DatasetConfig) -> Dataset:
-    return Dataset(logger=None, config=dataset_config)
+def dataset(dataset_config: DatasetConfig) -> PretrainDataset:
+    return PretrainDataset(None, dataset_config)
 
 
 @pytest.fixture(scope='module')
-def large_dataset() -> Dataset:
-    config = DatasetConfig(path='/home/user/.cache/thesis/data/preprocessed/train')
-    return Dataset(logger=None, config=config)
+def finetune_dataset(dataset_config: DatasetConfig, dataset) -> FinetuneDataset:
+    return FinetuneDataset(
+        logger=None,
+        config=dataset_config,
+        variable_scaler=dataset.variable_scaler,
+        demographic_scaler=dataset.demographic_scaler,
+    )
+
+
+@pytest.fixture(scope='module')
+def large_dataset() -> PretrainDataset:
+    config = DatasetConfig(path='/home/user/.cache/thesis/data/preprocessed/train',
+                           variables_dropout=0.2,)
+    return PretrainDataset(None, config)

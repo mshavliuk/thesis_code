@@ -3,13 +3,13 @@ import time
 from src.util.collator import Collator
 from src.util.data_loader import DataLoader
 from src.util.dataset import (
-    Dataset,
+    PretrainDataset,
     DatasetConfig,
 )
 
 config = DatasetConfig(path='/home/user/.cache/thesis/data/preprocessed/train', variables_dropout=0.2)
-dataset = Dataset(logger=None, config=config)
-# exit()
+dataset = PretrainDataset(logger=None, config=config)
+exit()
 num_workers = 0
 data_loader = DataLoader(dataset,
                          # pinned_memory? persistent_worker?

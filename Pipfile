@@ -10,6 +10,7 @@ scipy = "*"
 numba = "*"
 lightning = "*"
 wandb = "*"
+scikit-learn = "*"
 
 [dev-packages]
 pytest = "*"

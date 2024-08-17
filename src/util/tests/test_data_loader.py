@@ -4,11 +4,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.util.collator import Collator
-from src.util.dataset import Dataset
+from src.util.dataset import PretrainDataset
 
 
 class TestDataLoader:
-    def test_iterating_over_small_dataset(self, dataset: Dataset):
+    def test_iterating_over_small_dataset(self, dataset: PretrainDataset):
         data_loader = DataLoader(dataset,
                                  # pinned_memory? persistent_worker?
                                  # pin_memory_device='cuda:0',
@@ -19,7 +19,7 @@ class TestDataLoader:
         for _ in data_loader:
             ...
     
-    def test_iterating_over_large_dataset(self, large_dataset: Dataset):
+    def test_iterating_over_large_dataset(self, large_dataset: PretrainDataset):
         num_workers = 10
         data_loader = DataLoader(large_dataset,
                                  timeout=100000,

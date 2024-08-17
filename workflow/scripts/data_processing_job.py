@@ -33,12 +33,15 @@ class DataProcessingJob:
         'train_mortality_labels': f'{Config.data_dir}/preprocessed/train/mortality_labels.parquet',
         'test_mortality_labels': f'{Config.data_dir}/preprocessed/test/mortality_labels.parquet',
         'val_mortality_labels': f'{Config.data_dir}/preprocessed/val/mortality_labels.parquet',
+        'unittest_mortality_labels': f'./src/util/tests/data/mortality_labels.parquet',
         'train_events': f'{Config.data_dir}/preprocessed/train/events.parquet',
         'test_events': f'{Config.data_dir}/preprocessed/test/events.parquet',
         'val_events': f'{Config.data_dir}/preprocessed/val/events.parquet',
+        'unittest_events': f'./src/util/tests/data/events.parquet',
         'train_demographics': f'{Config.data_dir}/preprocessed/train/demographics.parquet',
         'test_demographics': f'{Config.data_dir}/preprocessed/test/demographics.parquet',
         'val_demographics': f'{Config.data_dir}/preprocessed/val/demographics.parquet',
+        'unittest_demographics': f'./src/util/tests/data/demographics.parquet',
         # 'train_stay_ids': f'{Config.data_dir}/preprocessed/train_stay_ids.npy',
         # 'test_stay_ids': f'{Config.data_dir}/preprocessed/test_stay_ids.npy',
         # 'val_stay_ids': f'{Config.data_dir}/preprocessed/val_stay_ids.npy',
@@ -225,8 +228,9 @@ class DataProcessingJob:
         ages = self.extract_ages(icu_stays)
         patients = self.data_extractor.read_patients()
         genders = self.extract_gender_events(icu_stays, patients)
+        # TODO: add ethnicity
         
-        return ages.unionByName(genders)
+        return ages.join(genders, on='stay_id', how='outer')
     
     def add_variable_name_col(self, events: DataFrame, features):
         variable_names_df = events.sparkSession.createDataFrame(
@@ -294,16 +298,14 @@ class DataProcessingJob:
     def extract_ages(self, icu_stays) -> DataFrame:
         ages = icu_stays.select(
             'stay_id',
-            F.when(F.col('age') > 200, 91.4).otherwise(F.col('age')).alias('value'),
-            F.lit('Age').alias('variable'),
+            F.when(F.col('age') > 200, 91.4).otherwise(F.col('age')).alias('age'),
         )
         return ages
     
     def extract_gender_events(self, icu_stays: DataFrame, patients: DataFrame):
         gender_events = icu_stays.join(patients, on='patient_id', how='inner').select(
             'stay_id',
-            F.when(F.col('GENDER') == 'M', 0).otherwise(1).alias('value'),
-            F.lit('Gender').alias('variable'),
+            F.when(F.col('GENDER') == 'M', 0).otherwise(1).alias('gender'),
         )
         return gender_events
     
@@ -328,21 +330,21 @@ class DataProcessingJob:
             'test': .2,
             'val': .16,
         }
-        labeled_splits = self.split_stays_by_patient(icu_stays_24h, split_fractions)
-        self.save_label_splits(labeled_splits)
+        split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions)
+        self.save_label_splits(icu_stays_24h, split_stay_ids)
         
         all_events = self.throttle_events(icu_events)
         
         # Saving data for supervised + unsupervised tasks (for all icu_stays, not only 24h+)
         # Train events are all events from all stays (not only 24h+) except val+test splits
         train_icu_stay_ids = all_events.select('stay_id') \
-            .subtract(labeled_splits['test'].select('stay_id')) \
-            .subtract(labeled_splits['val'].select('stay_id'))
+            .subtract(split_stay_ids['test']) \
+            .subtract(split_stay_ids['val'])
         
         all_split_stay_ids = {
             'train': train_icu_stay_ids,
-            'test': labeled_splits['test'].select('stay_id'),
-            'val': labeled_splits['val'].select('stay_id'),
+            'test': split_stay_ids['test'],
+            'val': split_stay_ids['val'],
         }
         
         demographics = self.get_demographics(icu_stays)
@@ -351,10 +353,11 @@ class DataProcessingJob:
         self.save_event_splits(all_events, all_split_stay_ids)
         return all_events
     
-    def save_label_splits(self, labeled_splits: dict[str, DataFrame]):
-        for name, df in labeled_splits.items():
-            df.select('stay_id', 'died').toPandas().to_parquet(
-                self.outputs[f'{name}_mortality_labels'])
+    def save_label_splits(self, labels, splits: dict[str, DataFrame]):
+        for name, df in splits.items():
+            labels.join(df, on='stay_id', how='inner') \
+                .select('stay_id', 'died') \
+                .toPandas().to_parquet(self.outputs[f'{name}_mortality_labels'])
     
     def save_demographic_splits(self, demographics: DataFrame, splits: dict[str, DataFrame]):
         for name, df in splits.items():
@@ -379,20 +382,9 @@ class DataProcessingJob:
         result = {}
         # convert patients to stays
         for key, df in zip(fractions.keys(), patient_id_splits):
-            split = icu_stays_24h.join(df, on='patient_id', how='inner').cache()
+            split = icu_stays_24h.join(df, on='patient_id', how='inner').select('stay_id').cache()
             result[key] = split
         return result
-    
-    def save_events(self, events: DataFrame, icu_ids: DataFrame, split_name: str):
-        selected_events = (events.select(
-            'stay_id',
-            'value',
-            'variable',
-            'source',
-            'minute',
-        ).join(icu_ids, on='stay_id', how='inner'))
-        
-        selected_events.write.mode('overwrite').parquet(self.outputs[f'{split_name}_events'])
     
     @cache_result('all_events')
     def throttle_events(self, events) -> DataFrame:
@@ -403,11 +395,22 @@ class DataProcessingJob:
         )
         
         return events
+    
+    def generate_unittest_dataset(self):
+        demographics = self.data_extractor.spark.read.parquet(self.outputs['test_demographics'])
+        events = self.data_extractor.spark.read.parquet(self.outputs['test_events'])
+        labels = self.data_extractor.spark.read.parquet(self.outputs['test_mortality_labels'])
+        
+        stay_ids = demographics.select('stay_id').sample(0.005).cache()
+        self.save_demographic_splits(demographics, {'unittest': stay_ids})
+        self.save_event_splits(events, {'unittest': stay_ids})
+        self.save_label_splits(labels, {'unittest': stay_ids})
 
 
 if __name__ == '__main__':
     spark = get_spark("Preprocessing MIMIC-III dataset")
     data_extractor = DataExtractor(spark)
     job = DataProcessingJob(data_extractor)
-    job.run()
+    # job.run()
+    job.generate_unittest_dataset()
     spark.stop()
