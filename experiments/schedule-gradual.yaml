@@ -1,0 +1,60 @@
+0:
+  params:
+  - model.head.binary_fc.bias
+  - model.head.binary_fc.weight
+1:
+  params:
+  - model.head.forecast_fc.bias
+  - model.head.forecast_fc.weight
+2:
+  params:
+  - model.demo_emb.2.bias
+  - model.demo_emb.2.weight
+3:
+  params:
+  - model.demo_emb.0.bias
+  - model.demo_emb.0.weight
+4:
+  params:
+  - model.fusion_att.u
+  - model.fusion_att.b
+5:
+  params:
+  - model.fusion_att.W
+  - model.transformer.norm2.bias
+6:
+  params:
+  - model.transformer.norm2.weight
+  - model.transformer.norm1.bias
+7:
+  params:
+  - model.transformer.norm1.weight
+  - model.transformer.b2
+8:
+  params:
+  - model.transformer.W2
+  - model.transformer.b1
+9:
+  params:
+  - model.transformer.W1
+  - model.transformer.Wo
+10:
+  params:
+  - model.transformer.Wv
+  - model.transformer.Wk
+11:
+  params:
+  - model.transformer.Wq
+  - model.variable_emb.weight
+12:
+  params:
+  - model.cve_value.W2
+  - model.cve_value.b1
+13:
+  params:
+  - model.cve_value.W1
+  - model.cve_time.W2
+14:
+  params:
+  - model.cve_time.b1
+  - model.cve_time.W1

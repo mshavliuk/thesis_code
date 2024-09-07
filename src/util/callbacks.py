@@ -1,6 +1,5 @@
-import inspect
 import json
-import re
+import os
 from pathlib import Path
 
 import lightning as L
@@ -12,33 +11,6 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import roc_curve
 
 from src.models.lightning_module import FinetuneStrats
-
-
-class FoldInfoLoggerCallback(L.Callback):
-    """
-    Callback to log fold and data fraction information to the test loop.
-    """
-    
-    def __init__(self, fold: int, data_fraction: float):
-        self.fold = fold
-        self.data_fraction = data_fraction
-    
-    def log_fold_info(self, trainer: L.Trainer, module: L.LightningModule):
-        module.log_dict({'fold': self.fold, 'data_fraction': self.data_fraction})
-    
-    def setup(self, trainer: L.Trainer, module: L.LightningModule, stage: str) -> None:
-        overridden_hooks = []
-        module_methods = inspect.getmembers(type(module), predicate=inspect.isfunction)
-        hook_re = re.compile(r'^on_(\w+)_(start|end|epoch_start|epoch_end|step)$')
-        
-        for name, method in module_methods:
-            if hook_re.match(name):
-                if parent_method := getattr(L.LightningModule, name, None):
-                    if method.__code__ != parent_method.__code__:
-                        overridden_hooks.append(name)
-        
-        for hook_name in overridden_hooks:
-            setattr(self, hook_name, self.log_fold_info)
 
 
 class CurvesLoggerCallback(L.Callback):
@@ -60,20 +32,7 @@ class CurvesLoggerCallback(L.Callback):
         ax.set_ylabel('True Positive Rate')
         ax.set_title('ROC Curve')
         self.save_fig(module, 'test_roc_curve', fig)
-        # TRY to use wandb table
-        #
-        # wandb_logger.log_table('test_roc_curve_table', columns=['fpr', 'tpr'], data=list(zip(fpr, tpr)))
-        # import wandb
-        # table = wandb.Table(data=list(zip(fpr, tpr)), columns=['fpr', 'tpr'])
-        # # save plot
-        # # wandb.log({"roc_curve": wandb.plot.roc_curve(target, preds)})
-        # plot = wandb_logger.experiment.plot_table('test_roc_curve_plot', table, {"x": "fpr", "y": "tpr"},
-        #                  {
-        #                         "title": "ROC Curve",
-        #                         "x-axis-title": "False positive rate",
-        #                         "y-axis-title": "True positive rate",
-        #                  })
-        # wandb_logger.experiment.log({"roc_curve": plot})
+
     
     def plot_precision_recall_curve(self, module: FinetuneStrats, precision, recall):
         pr_data = pd.DataFrame({'precision': precision, 'recall': recall})
@@ -110,7 +69,7 @@ class CurvesLoggerCallback(L.Callback):
     def on_test_epoch_end(self, trainer: L.Trainer, module: FinetuneStrats) -> None:
         roc_state = module.auroc.cpu().metric_state
         target = torch.concat(roc_state['target']).numpy()
-        preds = torch.concat(roc_state['preds']).numpy()
+        preds = torch.concat(roc_state['preds']).float().numpy()  # .float is needed to support bf16
         
         fpr, tpr, _ = roc_curve(target, preds)
         self.plot_roc_curve(module, fpr, tpr)
@@ -119,3 +78,53 @@ class CurvesLoggerCallback(L.Callback):
         precision, recall, thresholds = module.precision_recall_curve.cpu().compute()
         self.plot_precision_recall_curve(module, precision, recall)
         self.save_pr_curve(precision, recall)
+
+
+import wandb
+from lightning.pytorch.callbacks import ModelCheckpoint
+
+
+class WandbModelCheckpoint(ModelCheckpoint):
+    # TODO: delete this class
+    def __init__(self, *args, wandb_logger=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.wandb_logger = wandb_logger
+        self.best_model_artifact: wandb.Artifact | None = None
+    
+    def _save_checkpoint(self, trainer: L.Trainer, filepath: str) -> None:
+        super()._save_checkpoint(trainer, filepath)
+        
+        # upload if has to store every epoch
+        if self.save_top_k == -1:
+            artifact = self._upload_artifact(filepath)
+            
+            if self.current_score == self.best_model_score:
+                self.best_model_artifact = artifact
+    
+    def _upload_artifact(self, filepath, **kwargs) -> wandb.Artifact:
+        model_checkpoint_artifact = wandb.Artifact(
+            name=self.wandb_logger.experiment.name,
+            type='checkpoint',
+            metadata={
+                'score_value': self.current_score,
+                'score_metric': self.monitor,
+                'filepath': filepath,
+            }
+        )
+        if os.path.isfile(filepath):
+            model_checkpoint_artifact.add_file(filepath)
+        elif os.path.isdir(filepath):
+            model_checkpoint_artifact.add_dir(filepath)
+        else:
+            raise FileNotFoundError(f"No such file or directory {filepath}")
+        
+        return self.wandb_logger.experiment.log_artifact(model_checkpoint_artifact, **kwargs)
+    
+    def on_train_end(self, trainer: L.Trainer, pl_module: L.LightningModule) -> None:
+        if self.best_model_artifact:
+            self.best_model_artifact.wait()
+            self.best_model_artifact.aliases += ['best']
+            self.best_model_artifact.save()
+        else:
+            best_checkpoint=  self.best_model_path
+            self._upload_artifact(best_checkpoint, aliases=['best'])

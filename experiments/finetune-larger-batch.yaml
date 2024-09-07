@@ -1,0 +1,8 @@
+%TAG !include! ./finetune.yaml
+---
+description: "Finetune on original Strats with batch gradient accumulation"
+name: finetune-larger-batch
+
+
+trainer:
+  accumulate_grad_batches: 4

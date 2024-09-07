@@ -1,0 +1,9 @@
+%TAG !include! ./finetune.yaml
+---
+name: finetune-three-phases
+description: "Unfreeze the backbone and forecast layers gradually over three stages"
+
+ft_schedule: 'experiments/schedule-finetune-three-phases.yaml'
+
+trainer:
+  max_epochs: 120

@@ -1,0 +1,9 @@
+0:
+  params:
+  - '^model.head.binary_fc.*$'
+#  max_transition_epoch: 5
+  lr: 5.0e-4
+1:
+  params:
+  - '^(?!model\.head\.binary_fc).*$' # all except binary_fc
+  lr: 5.0e-5

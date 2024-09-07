@@ -1,38 +1,15 @@
 from collections import OrderedDict
-from dataclasses import dataclass
-from typing import Literal
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import transformer_engine.pytorch as te
 
-
-@dataclass(frozen=True)
-class StratsConfig:
-    hid_dim: int
-    num_layers: int
-    num_heads: int
-    dropout: float
-    attention_dropout: float
-    head: Literal['forecast', 'binary', 'forecast_binary']
-    
-    def __post_init__(self):
-        assert self.hid_dim > 0, 'Hidden dimension must be positive'
-        assert self.num_layers > 0, 'Number of layers must be positive'
-        assert self.num_heads > 0, 'Number of heads must be positive'
-        assert 0 <= self.dropout < 1, 'Dropout must be in [0, 1)'
-        assert 0 <= self.attention_dropout < 1, 'Attention dropout must be in [0, 1)'
-
-
-@dataclass(frozen=True)
-class FeaturesInfo:
-    demographics_num: int
-    features_num: int
-    
-    def __post_init__(self):
-        assert self.demographics_num > 0, 'Demographics number must be positive'
-        assert self.features_num > 0, 'Features number must be positive'
+from src.models.strats import (
+    FeaturesInfo,
+    StratsConfig,
+)
 
 
 class CVE(nn.Module):
@@ -102,8 +79,8 @@ class Transformer(nn.Module):
         self.W2 = nn.Parameter(self.init_proj((self.N, self.dff, self.d)), requires_grad=True)
         self.b2 = nn.Parameter(torch.zeros((self.N, 1, 1, self.d)), requires_grad=True)
         
-        self.norm1 = nn.LayerNorm(config.hid_dim, eps=1e-5, bias=True)
-        self.norm2 = nn.LayerNorm(config.hid_dim, eps=1e-5, bias=True)
+        self.norm1 = te.LayerNorm(config.hid_dim, eps=1e-5)
+        self.norm2 = te.LayerNorm(config.hid_dim, eps=1e-5)
     
     def init_proj(self, shape, gain=1):
         x = torch.rand(shape)
@@ -149,7 +126,7 @@ class Transformer(nn.Module):
         return x
 
 
-class Strats(nn.Module):
+class Strats_cudnn(nn.Module):
     def __init__(
         self,
         config: StratsConfig,
@@ -167,26 +144,26 @@ class Strats(nn.Module):
         
         self.head_type = config.head
         self.demo_emb = nn.Sequential(
-            nn.Linear(features_info.demographics_num, config.hid_dim * 2),
+            te.Linear(features_info.demographics_num, config.hid_dim * 2),
             nn.Tanh(),
-            nn.Linear(config.hid_dim * 2, config.hid_dim)
+            te.Linear(config.hid_dim * 2, config.hid_dim)
         )
         ts_demo_emb_size = config.hid_dim * 2
         
         if self.head_type == 'forecast':
-            self.forecast_fc = nn.Linear(ts_demo_emb_size, features_info.features_num)
+            self.forecast_fc = te.Linear(ts_demo_emb_size, features_info.features_num)
             self.binary_head = nn.Identity()
             self.head = nn.Sequential(OrderedDict([
-                ('forecast_fc', nn.Linear(ts_demo_emb_size, features_info.features_num)),
+                ('forecast_fc', te.Linear(ts_demo_emb_size, features_info.features_num)),
             ]))
         elif self.head_type == 'binary':
             self.head = nn.Sequential(OrderedDict([
-                ('binary_fc', nn.Linear(ts_demo_emb_size, 1))
+                ('binary_fc', te.Linear(ts_demo_emb_size, 1))
             ]))
         elif self.head_type == 'forecast_binary':
             self.head = nn.Sequential(OrderedDict([
-                ('forecast_fc', nn.Linear(ts_demo_emb_size, features_info.features_num)),
-                ('binary_fc', nn.Linear(features_info.features_num, 1))
+                ('forecast_fc', te.Linear(ts_demo_emb_size, features_info.features_num)),
+                ('binary_fc', te.Linear(features_info.features_num, 1))
             ]))
         else:
             raise ValueError(f'Invalid head type: {config.head}')

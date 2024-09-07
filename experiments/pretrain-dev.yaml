@@ -1,0 +1,32 @@
+%TAG !include! pretrain.yaml
+---
+
+name: "debug_pretrain"
+
+data_config:
+  bootstrap: true
+
+  train:
+    batch_size: 1
+    path: ./src/util/tests/data
+
+  val:
+    batch_size: 1
+    path: ./src/util/tests/data
+
+  test:
+    batch_size: 1
+    path: ./src/util/tests/data
+
+
+trainer:
+  max_epochs: 5
+
+
+checkpoint_callback:
+  dirpath: /home/user/.cache/thesis/dev-checkpoints/pretrain
+
+early_stop_callback:
+  patience: 5
+
+results_dir: /home/user/.cache/thesis/dev-results

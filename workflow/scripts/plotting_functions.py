@@ -6,6 +6,7 @@ from matplotlib import (
     cm,
 )
 from pyspark.sql.types import (
+    ArrayType,
     IntegerType,
     StringType,
     StructField,
@@ -90,14 +91,16 @@ def get_plot_patient_journey(
     plots_dir: str,
     statistics: pd.DataFrame,
     /,
-    file_format: str = 'png',
+    file_formats: list[str] = None,
 ):
+    if file_formats is None:
+        file_formats = ['png', 'eps', 'svg']
     plots_dir = os.path.abspath(plots_dir)
     os.makedirs(plots_dir, exist_ok=True)
     
     schema = StructType([
         StructField("stay_id", IntegerType(), False),
-        StructField("file_path", StringType(), False),
+        StructField("file_paths", ArrayType(StringType()), False),
     ])
     
     statistics = statistics.set_index('variable')[['p0.01', 'p0.99']]
@@ -256,17 +259,20 @@ def get_plot_patient_journey(
         # cbar.set_ticks([])  # Remove existing ticks
         
         axes[-1].set_xlabel('Hours from ICU admission')
-        
-        file_name = f"journey_{stay_id}.{file_format}"
-        file_path = f'{plots_dir}/{file_name}'
+        file_paths = []
+
         try:
-            fig.savefig(file_path)
-            fig.show()
+            for file_format in file_formats:
+                file_name = f"journey_{stay_id}.{file_format}"
+                file_path = f'{plots_dir}/{file_name}'
+                file_paths.append(file_path)
+                fig.savefig(file_path)
+            # fig.show()
         except Exception as e:
             print(f"Failed to save plot for group {stay_id}: {e}")
         finally:
             plt.close(fig)
-        return pd.DataFrame(data=[[stay_id, file_path]])
+        return pd.DataFrame(data=[[stay_id, file_paths]])
     
     return plot_patient_journey, schema
 

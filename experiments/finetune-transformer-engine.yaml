@@ -1,0 +1,12 @@
+%TAG !include! ./finetune.yaml
+---
+# NEEDS CUDA COMPUTE CAPABILITY 8.9 OR HIGHER
+
+description: "Finetune the original model with transformer-engine precision"
+name: finetune-transformer-engine
+
+module_config:
+  model_name: strats_cudnn
+
+trainer:
+  precision: transformer-engine

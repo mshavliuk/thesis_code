@@ -11,6 +11,10 @@ numba = "*"
 lightning = "*"
 wandb = "*"
 scikit-learn = "*"
+"jsonargparse[signatures]" = "*"
+finetuning-scheduler = "*"
+#flash-attn = "*"
+#transformerengine = {git="https://github.com/NVIDIA/TransformerEngine.git", ref="stable"}
 
 [dev-packages]
 pytest = "*"

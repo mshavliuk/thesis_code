@@ -1,5 +1,7 @@
 import os
+from functools import reduce
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import (
@@ -19,10 +21,12 @@ from workflow.scripts.config import Config
 from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
+from workflow.scripts.logger import get_logger
 from workflow.scripts.plotting_functions import (
     get_plot_patient_journey,
     get_plot_variables_distribution,
 )
+from workflow.scripts.spark import get_spark
 from workflow.scripts.statistics_job import StatisticsJob
 
 
@@ -37,16 +41,23 @@ class DataPlottingJob:
         self.spark = spark
         self.data_extractor = DataExtractor(spark)
         self.show_plot = Config.remote_run
-        self.logger = Config.get_logger(__name__)
+        self.logger = get_logger()
         os.makedirs(f'{Config.data_dir}/plots', exist_ok=True)
+    
+    def get_all_events(self) -> DataFrame:
+        splits= 'train', 'val', 'test'
+        all_events = []
+        for split in splits:
+            all_events.append(spark.read.parquet(DataProcessingJob.outputs[f"{split}_events"]))
+        return reduce(DataFrame.unionByName, all_events)
     
     def run(self):
         # events = DataProcessingJob.sanitize_events.get_cached_df(self.spark)
         # self.plot_correlation_matrix(events)
         variables_statistics = pd.read_csv(StatisticsJob.outputs['variables'])
-        events = self.spark.read.parquet(DataProcessingJob.outputs['events'])
+        events = self.get_all_events()
         self.plot_patient_journeys(events, variables_statistics)
-        
+        exit()
         items = self.data_extractor.read_items()
         feature_events = DataProcessingJob.process_event_values.get_cached_df(self.spark)
         
@@ -101,14 +112,70 @@ class DataPlottingJob:
         fig.show()
     
     def plot_patient_journeys(self, events: DataFrame, variables_statistics: pd.DataFrame):
-        selected_journeys = {272850, 275225, 292741}
-        removed_variables = {'GCS_eye', 'GCS_motor', 'GCS_verbal', 'Weight'}
+        
+        var = {'HR', 'MBP', "O2 Saturation", "SBP", "Temperature", "Urine"}
+        ev = events \
+            .filter((F.col('stay_id') == 272850) & F.col('variable').isin(var)
+                    & F.col('minute').between(200, 20 * 60))\
+            .select('minute', 'variable', 'value').orderBy('minute').toPandas()
+        
+        ev['variable'] = ev['variable'].replace({
+            'O2 Saturation': 'O2',
+            "Temperature": "Temp°C",
+        })
+        
+        fig, ax = plt.subplots(figsize=(12, 3))
+        sns.heatmap(ev[['minute', 'value']].T, cmap='viridis', annot=False, cbar=False, ax=ax)
+        ax.set_xticks([])
+        for i, variable in enumerate(ev['variable']):
+            ax.text(i + 0.5, -.5, variable, ha='center', va='center', rotation=90, fontsize=10)
+        
+        fig.tight_layout()
+        fig.savefig(f'/tmp/events_map.svg')
+        
+        
+        # give random ids from 1 to 129 to variables
+        u_vars = ev['variable'].unique()
+        var_ids = np.random.choice(range(1, 130), len(u_vars), replace=False)
+        
+        # new df with cols 'variable_id' and mask
+        # for selected variables mask is 1, for others 0
+        # variables
+        df = pd.DataFrame({'variable_id': range(1, 130)})
+        df['mask'] = 0
+        df.loc[df['variable_id'].isin(var_ids), 'mask'] = 1
+        
+        df = pd.DataFrame({'variable': ['HR', 'MBP', 'Insulin', 'O2', 'SBP', 'RBC', 'Temp°C', 'Urine'],
+                           'values': np.random.rand(8),
+                           'mask': [1, 1, 0, 1, 1, 0, 1, 1]})
+        
+        fig, ax = plt.subplots(figsize=(3, 2))
+        sns.heatmap(df[['values']].T, cmap='viridis', annot=False, cbar=False, ax=ax)
+        ax.set_xticks([])
+        
+        ax.set_yticks([0.5, 1.5, 2.5])
+        ax.set_yticklabels(['value', 'mask', 'variable'], rotation=0)
+        
+        
+        for i, event in enumerate(df.iterrows()):
+            # mask and var name
+            mask, variable = event[1]['mask'], event[1]['variable']
+            ax.text(i + 0.5, 1.5, mask, ha='center', va='center', fontsize=10)
+            ax.text(i + 0.5, 2.5, variable, ha='center', va='center', rotation=90, fontsize=10)
+        fig.tight_layout()
+        fig.savefig(f'/tmp/variables_map.svg')
+        exit()
+        
+        selected_journeys = {272850, 275225, 292741, 271806}
+        removed_variables = {'GCS_eye', 'GCS_motor', 'GCS_verbal', 'Weight', 'INR', 'PT', 'PTT'}
         plot_journeys, schema = get_plot_patient_journey(
             self.outputs['journeys'],
             variables_statistics,
-            file_format='eps',
+            file_formats=['png', 'eps', 'svg'],
         )
+
         plots = (events
+        .withColumn('source', F.col('source').getItem(0))
          .filter(~F.col('variable').isin(removed_variables))
          .repartition('stay_id')
          .filter(F.col('stay_id').isin(selected_journeys))
@@ -152,3 +219,9 @@ class DataPlottingJob:
             .rdd.collectAsMap()
         )
         return events.sampleBy('variable', fractions=fractions)
+    
+if __name__ == '__main__':
+    spark = get_spark("Plotting Job")
+    job = DataPlottingJob(spark)
+    job.run()
+    spark.stop()

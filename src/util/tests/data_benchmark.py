@@ -1,22 +1,28 @@
 import time
 
+from torch.utils.data import DataLoader
+
 from src.util.collator import Collator
-from src.util.data_loader import DataLoader
 from src.util.dataset import (
     PretrainDataset,
     DatasetConfig,
 )
 
-config = DatasetConfig(path='/home/user/.cache/thesis/data/preprocessed/train', variables_dropout=0.2)
-dataset = PretrainDataset(logger=None, config=config)
-exit()
+config = DatasetConfig(
+    path='/home/user/.cache/thesis/data/preprocessed/train',
+    variables_dropout=0.2,
+    max_events=880,
+    max_minute=1440,
+    min_input_minutes=720,
+)
+dataset = PretrainDataset(config=config)
+dataset.load_data()
 num_workers = 0
 data_loader = DataLoader(dataset,
                          # pinned_memory? persistent_worker?
                          timeout=0 if num_workers == 0 else 100000,
                          batch_size=64,
                          shuffle=True,
-                         device='cuda:0',
                          num_workers=num_workers,
                          collate_fn=Collator())
 ### warmup

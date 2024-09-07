@@ -8,14 +8,24 @@ import pyarrow.dataset as ds
 from numba import jit
 from torch.utils.data import Dataset as TorchDataset
 
+from src.models.strats import FeaturesInfo
+
 
 @dataclass(frozen=True)
 class DatasetConfig:
     path: str
-    variables_dropout: float
+    """ Path to the dataset directory (including all 3 splits) """
+    variables_dropout: float  # supported only for pretrain dataset
+    """
+    Fraction of variables to drop from the sample.
+    Supported only for pretrain dataset.
+    """
     max_events: int
+    """ Maximum number of events in the input window """
     max_minute: int
-    min_input_minutes: int
+    """ Maximum minute in the input window """
+    min_input_minutes: int  # supported only for pretrain dataset
+    """ Smallest input window size in minutes. Supported only for pretrain dataset """
     
     def __post_init__(self):
         assert self.path is not None, "Dataset path must be provided"
@@ -24,11 +34,6 @@ class DatasetConfig:
         assert self.max_events > 0, "Max events must be positive"
         assert self.max_minute > 0, "Max minute must be positive"
         assert self.min_input_minutes > 0, "Min input minutes must be positive"
-
-
-class VariablesMetadata:
-    num_variables: int
-    variable_categories: pd.CategoricalDtype
 
 
 class AbstractScaler:
@@ -47,6 +52,14 @@ class VariableScaler(AbstractScaler):
     variable_means: np.ndarray
     variable_stds: np.ndarray
     variable_categories: list[str]
+    
+    def __eq__(self, other):
+        return (
+            isinstance(other, VariableScaler)
+            and np.array_equal(self.variable_means, other.variable_means)
+            and np.array_equal(self.variable_stds, other.variable_stds)
+            and self.variable_categories == other.variable_categories
+        )
     
     def fit(self, events: pd.DataFrame):
         self.variable_categories = events['variable'].cat.categories.to_list()
@@ -74,6 +87,13 @@ class DemographicsScaler(AbstractScaler):
     age_mean: float
     age_std: float
     
+    def __eq__(self, other):
+        return (
+            isinstance(other, DemographicsScaler)
+            and self.age_mean == other.age_mean
+            and self.age_std == other.age_std
+        )
+    
     def fit(self, demographics: pd.DataFrame):
         self.age_mean, self.age_std = demographics['age'].agg(['mean', 'std'])
         return self
@@ -86,11 +106,6 @@ class DemographicsScaler(AbstractScaler):
 
 
 class AbstractDataset(TorchDataset):
-    num_variables: int
-    num_demographics: int
-    variable_scaler: VariableScaler = None
-    demographic_scaler: DemographicsScaler = None
-    
     def __init__(self, config: DatasetConfig):
         self.config = config
         
@@ -99,9 +114,24 @@ class AbstractDataset(TorchDataset):
         self.min_input_minutes = np.int64(config.min_input_minutes)
         
         self.data = None
+        
+        events_pq = ds.dataset(os.path.join(config.path, 'events.parquet'), format='parquet')
+        scanner = events_pq.scanner(columns=['variable'])
+        self.num_variables = np.int16(pc.count_distinct(scanner.to_table()['variable']).as_py())
+        
+        demographic_pq = ds.dataset(
+            os.path.join(config.path, 'demographics.parquet'), format='parquet')
+        self.num_demographics = np.int16(len(set(demographic_pq.schema.names) - {'stay_id'}))
+        
+        self.variable_scaler: VariableScaler | None = None
+        self.demographic_scaler: DemographicsScaler | None = None
     
     def __len__(self):
         return len(self.data)
+    
+    @property
+    def indexes(self):
+        return np.arange(len(self.data))
     
     def get_scalers(self):
         return {
@@ -114,29 +144,52 @@ class AbstractDataset(TorchDataset):
             raise ValueError("Scalers have to be copied before loading data")
         self.variable_scaler = scalers['variable_scaler']
         self.demographic_scaler = scalers['demographic_scaler']
+        self.num_variables = len(self.variable_scaler.variable_categories)
     
-    def get_variables_metadata(self):
-        return {
-            'features_num': int(self.num_variables),
-            'demographics_num': int(self.num_demographics)
-        }
+    def get_features_info(self) -> FeaturesInfo:
+        return FeaturesInfo(
+            features_num=int(self.num_variables),
+            demographics_num=int(self.num_demographics)
+        )
     
     def load_data(self):
         raise NotImplementedError
+    
+    # @profile
+    def _drop_variables(
+        self,
+        minutes: np.ndarray,
+        variables: np.ndarray,
+        values: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        vals, inverse_index = np.unique(variables, return_inverse=True)
+        # generate random floats size of vals
+        keep_vars = np.random.rand(len(vals)) > self.config.variables_dropout
+        idx = keep_vars[inverse_index]
+        variables = variables[idx]
+        
+        if len(variables) == 0:
+            return None
+        
+        return minutes[idx], variables, values[idx]
+
+
+class MemDataset(TorchDataset):
+    """
+    A simple in-memory dataset.
+    """
+    
+    def __init__(self, dataset: TorchDataset):
+        self.data = [dataset[i] for i in range(len(dataset))]
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        return self.data[idx]
+
 
 class PretrainDataset(AbstractDataset):
-    def __init__(self, config: DatasetConfig):
-        super().__init__(config)
-        self.data = None
-        events_pq = ds.dataset(os.path.join(config.path, 'events.parquet'), format='parquet')
-        scanner = events_pq.scanner(columns=['variable'])
-        self.num_variables = np.int16(pc.count_distinct(scanner.to_table()['variable']).as_py())
-        self.drop_num = np.int16(self.num_variables * self.config.variables_dropout)
-        
-        demographic_pq = ds.dataset(
-            os.path.join(config.path, 'demographics.parquet'), format='parquet')
-        self.num_demographics = np.int16(len(set(demographic_pq.schema.names) - {'stay_id'}))
-    
     def load_data(self):
         events = pd.read_parquet(
             os.path.join(self.config.path, 'events.parquet'),
@@ -206,22 +259,6 @@ class PretrainDataset(AbstractDataset):
         
         return minutes, variables, values
     
-    def _drop_variables(
-        self,
-        minutes: np.ndarray,
-        variables: np.ndarray,
-        values: np.ndarray,
-        drop_num: int
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-        variables_to_drop = np.random.random_integers(0, self.num_variables, drop_num)
-        
-        idx = np.where(~np.isin(variables, variables_to_drop))
-        
-        if len(idx[0]) == 0:
-            return None
-        
-        return minutes[idx], variables[idx], values[idx]
-    
     @staticmethod
     @jit
     def _get_mean_values(values: np.ndarray, variables: np.ndarray, num_variables: int):
@@ -268,8 +305,8 @@ class PretrainDataset(AbstractDataset):
             window = self._select_window(
                 sample['minute'], sample['variable'], sample['value'], t0, t1
             )
-            
-            window = self._drop_variables(*window, self.drop_num)
+            if self.config.variables_dropout > 0:
+                window = self._drop_variables(*window)
         
         input_minutes, input_variables, input_values = window
         # normalize time to [-1,1] range
@@ -300,17 +337,6 @@ class FinetuneDataset(AbstractDataset):
         mortality_labels = pd.read_parquet(
             os.path.join(self.config.path, 'mortality_labels.parquet'),
         ).set_index('stay_id').astype({'died': 'float32'})
-        #
-        # if self.config.data_fraction < 1:
-        #     torch.utils.data.Subset
-        #     # TODO: extract into method and cover with tests
-        #     fold_size = len(mortality_labels) * self.config.data_fraction
-        #     start_idx = int(len(mortality_labels) / folds_number * fold_index)
-        #     end_idx = int(start_idx + fold_size)
-        #
-        #     # Select the stay_ids for the current fold. Concat two stay_ids to allow cyclic indexing
-        #     stay_ids = (mortality_labels.index.to_list() * 2)[start_idx:end_idx]
-        #     mortality_labels = mortality_labels.loc[stay_ids]
         
         events = pd.read_parquet(
             os.path.join(self.config.path, 'events.parquet'),
@@ -340,26 +366,46 @@ class FinetuneDataset(AbstractDataset):
                 'variables': stay_events['variable'].to_numpy(),
                 'times': stay_events['time'].to_numpy(),
                 'values': stay_events['value'].to_numpy(),
+                # use array for label to collate later
                 'label': np.array([mortality_labels.loc[stay_id, 'died']]),
                 'demographics': demographics.loc[stay_id].to_numpy()
             }
             self.data[stay_id] = stay_data
         self.stay_ids = list(self.data.keys())
     
+    # def prevalence(self):
+    #     return sum([data['label'][0] for data in self.data.values()]) / len(self.data)
+    
     def __getitem__(self, idx):
         stay_id = self.stay_ids[idx]
         stay = self.data[stay_id]
         
-        num_samples = len(stay['values'])
+        triplets = None
+        if self.config.variables_dropout > 0:
+            while triplets is None:
+                triplets = self._drop_variables(
+                    stay['times'], stay['variables'], stay['values'])
+        else:
+            triplets = stay['times'], stay['variables'], stay['values']
+        
+        times, variables, values = triplets
+        
+        num_samples = len(values)
         
         if num_samples <= self.max_events:
-            return stay
+            return {
+                'values': values,
+                'times': times,
+                'variables': variables,
+                'label': stay['label'],
+                'demographics': stay['demographics']
+            }
         else:
             selected_events = np.random.choice(num_samples, self.max_events, replace=False)
             return {
-                'values': stay['values'][selected_events],
-                'times': stay['times'][selected_events],
-                'variables': stay['variables'][selected_events],
+                'values': values[selected_events],
+                'times': times[selected_events],
+                'variables': variables[selected_events],
                 'label': stay['label'],
                 'demographics': stay['demographics']
             }

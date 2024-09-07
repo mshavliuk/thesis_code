@@ -11,3 +11,4 @@ dependencies:
   - pipenv
   - pytorch::pytorch==2.4
   - pytorch-cuda=12.1
+  - cudnn

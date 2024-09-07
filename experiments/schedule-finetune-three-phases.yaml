@@ -1,0 +1,12 @@
+0:
+  params:
+  - '^model.head.binary_fc.*$'
+  lr: 5.0e-4
+1:
+  params:
+  - '^model.head.forecast_fc.*$'
+  lr: 1.0e-4
+2:
+  params:
+  - '^(?!model\.head\.(binary|forecast)_fc).*$' # all except binary_fc and forecast_fc
+  lr: 5.0e-5

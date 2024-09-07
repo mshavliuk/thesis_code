@@ -1,0 +1,81 @@
+description: &description "Finetune on original Strats data and hyperparams"
+name: &name original_strats
+stage: &stage "finetune"
+
+metric: &metric val_pr_roc_auc_sum
+metric_mode: &metric_mode max
+
+wandb_logger:
+  project: Strats
+  job_type: *stage
+  name: *name
+  notes: *description
+
+checkpoint: original_strats:pretrain
+
+_common_dataset_: &common_dataset
+  max_events: 880
+  balanced: false
+  max_minute: 1440 # 24 * 60
+  min_input_minutes: 720 # 12*60
+  repeat_times: 1
+
+ft_schedule: 'experiments/schedule-gradual.yaml'
+
+module_config:
+  weighted_loss: true
+  model_name: Strats
+
+  optimizer:
+    lr: 5.0e-5
+
+  model:
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 16
+    dropout: 0.2
+    attention_dropout: 0.2
+    head: 'forecast_binary'
+
+data_config:
+  bootstrap: false
+
+  train:
+    batch_size: 16
+    path: /home/user/.cache/thesis/data/original_strats_data/train
+    variables_dropout: 0.2
+    <<: *common_dataset
+
+  val:
+    batch_size: 32
+    path: /home/user/.cache/thesis/data/original_strats_data/val
+    variables_dropout: 0
+    <<: *common_dataset
+
+  test:
+    batch_size: 32
+    path: /home/user/.cache/thesis/data/original_strats_data/test
+    variables_dropout: 0
+    <<: *common_dataset
+
+trainer:
+  max_epochs: 60
+  gradient_clip_val: 0.3
+#  val_check_interval: 1.0
+  precision: bf16-mixed
+  accumulate_grad_batches: 1
+
+
+checkpoint_callback:
+  monitor: *metric
+  mode: *metric_mode
+  save_top_k: 1
+  dirpath: /home/user/.cache/thesis/checkpoints/finetune
+
+early_stop_callback:
+  monitor: *metric
+  mode: *metric_mode
+  patience: 7
+
+
+results_dir: /home/user/.cache/thesis/results

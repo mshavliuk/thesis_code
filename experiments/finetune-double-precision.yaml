@@ -1,0 +1,8 @@
+%TAG !include! ./finetune.yaml
+---
+
+description: "Finetune the original model with double (64-bit) precision"
+name: finetune-double-precision
+
+trainer:
+  precision: 64-true

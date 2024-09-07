@@ -1,8 +1,12 @@
+import argparse
 import itertools
 import logging
+import os
+import pickle
 from functools import (
     reduce,
 )
+from typing import TypedDict
 
 import pandas as pd
 from pyspark.sql import (
@@ -22,34 +26,39 @@ from pyspark.sql.types import (
 from workflow.scripts.cache_result import (
     cache_result,
 )
-from workflow.scripts.config import Config
 from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.spark import get_spark
 
+class Splits[T](TypedDict):
+    train: T
+    val: T
+    test: T
 
 class DataProcessingJob:
-    outputs = {
-        'train_mortality_labels': f'{Config.data_dir}/preprocessed/train/mortality_labels.parquet',
-        'test_mortality_labels': f'{Config.data_dir}/preprocessed/test/mortality_labels.parquet',
-        'val_mortality_labels': f'{Config.data_dir}/preprocessed/val/mortality_labels.parquet',
-        'unittest_mortality_labels': f'./src/util/tests/data/mortality_labels.parquet',
-        'train_events': f'{Config.data_dir}/preprocessed/train/events.parquet',
-        'test_events': f'{Config.data_dir}/preprocessed/test/events.parquet',
-        'val_events': f'{Config.data_dir}/preprocessed/val/events.parquet',
-        'unittest_events': f'./src/util/tests/data/events.parquet',
-        'train_demographics': f'{Config.data_dir}/preprocessed/train/demographics.parquet',
-        'test_demographics': f'{Config.data_dir}/preprocessed/test/demographics.parquet',
-        'val_demographics': f'{Config.data_dir}/preprocessed/val/demographics.parquet',
-        'unittest_demographics': f'./src/util/tests/data/demographics.parquet',
-        # 'train_stay_ids': f'{Config.data_dir}/preprocessed/train_stay_ids.npy',
-        # 'test_stay_ids': f'{Config.data_dir}/preprocessed/test_stay_ids.npy',
-        # 'val_stay_ids': f'{Config.data_dir}/preprocessed/val_stay_ids.npy',
-    }
-    
-    def __init__(self, data_extractor: DataExtractor):
+    def __init__(self, data_extractor: DataExtractor, output_path: str):
         self.data_extractor = data_extractor
         self.logger = logging.getLogger(__name__)
+        
+        self.outputs = {
+            'train_mortality_labels': f'{output_path}/train/mortality_labels.parquet',
+            'test_mortality_labels': f'{output_path}/test/mortality_labels.parquet',
+            'val_mortality_labels': f'{output_path}/val/mortality_labels.parquet',
+            'train_events': f'{output_path}/train/events.parquet',
+            'test_events': f'{output_path}/test/events.parquet',
+            'val_events': f'{output_path}/val/events.parquet',
+            'train_demographics': f'{output_path}/train/demographics.parquet',
+            'test_demographics': f'{output_path}/test/demographics.parquet',
+            'val_demographics': f'{output_path}/val/demographics.parquet',
+            'unittest_events': './src/util/tests/data/events.parquet',
+            'unittest_mortality_labels': './src/util/tests/data/mortality_labels.parquet',
+            'unittest_demographics': './src/util/tests/data/demographics.parquet',
+        }
+        
+        out_dirs = {os.path.abspath(os.path.dirname(out)) for out in self.outputs.values()}
+        
+        for out_dir in out_dirs:
+            os.makedirs(out_dir, exist_ok=True)
     
     @staticmethod
     @udf(ArrayType(StructType([
@@ -309,7 +318,7 @@ class DataProcessingJob:
         )
         return gender_events
     
-    def run(self) -> DataFrame:
+    def run(self, seed: int, strats_splits_path) -> DataFrame:
         features = get_features()
         self.logger.info(f'Reading data')
         raw_events = self.get_raw_events(features)
@@ -325,12 +334,11 @@ class DataProcessingJob:
         # Saving data for supervised task
         icu_stays_24h = self.get_icu_alive_for_24h(icu_stays, icu_events, admissions)
         
-        split_fractions = {
-            'train': .64,
-            'test': .2,
-            'val': .16,
-        }
-        split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions)
+        if strats_splits_path is not None:
+            split_stay_ids = self.split_stays_by_strats(strats_splits_path)
+        else:
+            split_fractions: Splits[float] = {'train': .64, 'test': .2, 'val': .16 }
+            split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions, seed)
         self.save_label_splits(icu_stays_24h, split_stay_ids)
         
         all_events = self.throttle_events(icu_events)
@@ -341,7 +349,7 @@ class DataProcessingJob:
             .subtract(split_stay_ids['test']) \
             .subtract(split_stay_ids['val'])
         
-        all_split_stay_ids = {
+        all_split_stay_ids: Splits[DataFrame] = {
             'train': train_icu_stay_ids,
             'test': split_stay_ids['test'],
             'val': split_stay_ids['val'],
@@ -353,30 +361,41 @@ class DataProcessingJob:
         self.save_event_splits(all_events, all_split_stay_ids)
         return all_events
     
-    def save_label_splits(self, labels, splits: dict[str, DataFrame]):
+    def save_label_splits(self, labels, splits: Splits[DataFrame]):
         for name, df in splits.items():
             labels.join(df, on='stay_id', how='inner') \
                 .select('stay_id', 'died') \
                 .toPandas().to_parquet(self.outputs[f'{name}_mortality_labels'])
     
-    def save_demographic_splits(self, demographics: DataFrame, splits: dict[str, DataFrame]):
+    def save_demographic_splits(self, demographics: DataFrame, splits: Splits[DataFrame]):
         for name, df in splits.items():
             demographics.join(df, on='stay_id', how='inner').toPandas().to_parquet(
                 self.outputs[f'{name}_demographics'])
     
-    def save_event_splits(self, events: DataFrame, splits: dict[str, DataFrame]):
+    def save_event_splits(self, events: DataFrame, splits: Splits[DataFrame]):
         for name, df in splits.items():
             events.join(df, on='stay_id', how='inner').repartition(1).write.parquet(
                 self.outputs[f'{name}_events'], mode='overwrite')
     
+    def split_stays_by_strats(self, split_path) -> Splits[DataFrame]:
+        data, oc, train_ids, val_ids, test_ids = pickle.load(open(split_path, 'rb'))
+        
+        return {
+            'train': self.data_extractor.spark.createDataFrame(train_ids, schema=['stay_id']),
+            'val': self.data_extractor.spark.createDataFrame(val_ids, schema=['stay_id']),
+            'test': self.data_extractor.spark.createDataFrame(test_ids, schema=['stay_id']),
+        }
+    
     def split_stays_by_patient(
-        self, icu_stays_24h: DataFrame, fractions: dict[str, float]
-    ) -> dict[str, DataFrame]:
+        self, icu_stays_24h: DataFrame, fractions: Splits[float], seed: int
+    ) -> Splits[DataFrame]:
         assert sum(fractions.values()) == 1, 'Fractions must sum to 1'
         icu_stays_24h = icu_stays_24h.cache()
         # split events on patient level
         patient_ids = icu_stays_24h.select('patient_id').distinct().cache()
-        patient_id_splits = patient_ids.randomSplit(list(fractions.values()), seed=42)
+        patient_id_splits = patient_ids \
+            .orderBy('patient_id') \
+            .randomSplit(list(fractions.values()), seed=seed)
         # check if there are intersections
         
         result = {}
@@ -408,9 +427,15 @@ class DataProcessingJob:
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=42, help='Random seed')
+    parser.add_argument('--output-path', type=str, required=True, help='Path to output directory')
+    parser.add_argument('--split-by-strats', type=str, help='Path to strats splits')
+    args = parser.parse_args()
+    
     spark = get_spark("Preprocessing MIMIC-III dataset")
     data_extractor = DataExtractor(spark)
-    job = DataProcessingJob(data_extractor)
-    # job.run()
-    job.generate_unittest_dataset()
+    job = DataProcessingJob(data_extractor, args.output_path)
+    job.run(args.seed, args.split_by_strats)
+    # job.generate_unittest_dataset()
     spark.stop()

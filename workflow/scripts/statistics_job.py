@@ -1,3 +1,4 @@
+import argparse
 import itertools
 import logging
 import os
@@ -31,17 +32,13 @@ class StatisticsJob:
         out_dir = f'{Config.data_dir}/statistics'
         os.makedirs(out_dir, exist_ok=True)
     
-    def run(self):
+    def run(self, output_path: str):
         """
         Compute statistics for raw and preprocessed datasets.
         Stores the results in the statistics directory as csv files.
         :return:
         """
-        train_df = spark.read.parquet(DataProcessingJob.outputs[f"train_events"])
-        stay_ids = train_df.select('stay_id').distinct().sample(0.001)
-        train_df.join(stay_ids, on='stay_id', how='inner').toPandas().to_parquet(
-            '/home/user/projects/thesis_code/src/tests/data/events.parquet')
-        
+        processing_outputs = DataProcessingJob(self.data_extractor, output_path).outputs
         features = get_features()
         items = self.data_extractor.read_items()
         features_df = self.compute_features_statistics(features, items)
@@ -51,8 +48,8 @@ class StatisticsJob:
         splits = ('train', 'test', 'val')
         labels, events = {}, {}
         for split in splits:
-            labels[split] = pd.read_pickle(DataProcessingJob.outputs[f"{split}_mortality_labels"])
-            events[split] = pd.read_parquet(DataProcessingJob.outputs[f"{split}_events"])
+            labels[split] = pd.read_parquet(processing_outputs[f"{split}_mortality_labels"])
+            events[split] = pd.read_parquet(processing_outputs[f"{split}_events"])
         
         training = self.compute_training_statistics(labels, events)
         self.save_as(training, 'training')
@@ -64,7 +61,7 @@ class StatisticsJob:
         self.save_as(raw_dataset, 'raw_dataset')
         all_events = []
         for split in splits:
-            all_events.append(spark.read.parquet(DataProcessingJob.outputs[f"{split}_events"]))
+            all_events.append(spark.read.parquet(processing_outputs[f"{split}_events"]))
         all_events = reduce(DataFrame.unionByName, all_events)
         variables = self.compute_variables_statistics(all_events)
         self.save_as(variables, 'variables')
@@ -88,7 +85,7 @@ class StatisticsJob:
             events.groupBy('variable').agg(
                 F.mean('value').alias('mean'),
                 F.stddev('value').alias('std'),
-                F.expr(f'percentile_approx(value, array{percentiles})').alias('percentiles'),
+                F.expr(f'percentile(value, array{percentiles})').alias('percentiles'),
                 F.min('value').alias('min'),
                 F.max('value').alias('max'),
                 F.count('value').alias('count'),
@@ -170,9 +167,11 @@ class StatisticsJob:
             data.append((f"Supervised{split.capitalize()}LengthLabels", df.shape[0]))
             num_events = events[split]['stay_id'].isin(df['stay_id']).sum()
             data.append((f"Supervised{split.capitalize()}LengthEvents", num_events))
+            
         
         for split, df in events.items():
             data.append((f"Unsupervised{split.capitalize()}LengthEvents", df.shape[0]))
+            # TODO: number of stays per split
         return pd.DataFrame(data, columns=['statistic', 'value'], dtype=object)
     
     def compute_raw_dataset_statistics(self, parquets: Iterable[Path]):
@@ -187,7 +186,7 @@ class StatisticsJob:
         return df
     
     def single_variable_stat(self, variable_name):
-        events = self.spark.read.parquet(DataProcessingJob.outputs['events'])
+        events = self.spark.read.parquet(processing_outputs['events'])
         var_events = events.filter(F.col('variable') == variable_name)
         var_events.groupBy('source').count().show()
         
@@ -252,9 +251,14 @@ class StatisticsJob:
 
 if __name__ == '__main__':
     # spark = SparkSession.builder.appName('StatisticsJob').getOrCreate()
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output-path', type=str, required=True, help='Path to output directory')
+    args = parser.parse_args()
+    
     spark = get_spark('StatisticsJob')
     job = StatisticsJob(spark)
-    job.run()
+    job.run(args.output_path)
     # job.chartevents()
     # job.labevents()
     # job.count_sanitized_events()

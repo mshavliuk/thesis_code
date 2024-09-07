@@ -9,21 +9,20 @@ from src.util.dataset import (
 
 @pytest.fixture(scope='module')
 def dataset_config():
-    # with tempfile.TemporaryDirectory() as tmpdir:
     CONFIG_SAMPLE = {
-        'some_config': {},
-        'dataset': {
             'path': './src/util/tests/data',
             'variables_dropout': 0.2,
+            'max_events': 100,
+            'max_minute': 100,
+            'min_input_minutes': 10,
         }
-    }
     
-    yield DatasetConfig(**CONFIG_SAMPLE['dataset'])
+    yield DatasetConfig(**CONFIG_SAMPLE)
 
 
 @pytest.fixture(scope='module')
 def dataset(dataset_config: DatasetConfig) -> PretrainDataset:
-    return PretrainDataset(None, dataset_config)
+    return PretrainDataset(dataset_config)
 
 
 @pytest.fixture(scope='module')
