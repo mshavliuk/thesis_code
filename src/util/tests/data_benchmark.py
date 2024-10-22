@@ -1,46 +1,36 @@
+import argparse
 import time
+from pathlib import Path
 
-from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from src.util.collator import Collator
-from src.util.dataset import (
-    PretrainDataset,
-    DatasetConfig,
+from src.util.config_namespace import read_config
+from src.util.data_module import MIMICIIIDataModule
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--config', type=str, required=True, help='Path to config file')
+args = parser.parse_args()
+config = read_config(args.config)
+
+checkpoint_dir = Path('/home/user/.cache/thesis/checkpoints/finetune')
+# latest dir
+checkpoint_dir = max(checkpoint_dir.glob('*'), key=lambda x: x.stat().st_mtime)
+
+# latest file
+checkpoint_path = max(checkpoint_dir.glob('*.ckpt'), key=lambda x: x.stat().st_mtime)
+
+dataset_module = MIMICIIIDataModule.load_from_checkpoint(
+    checkpoint_path,
+    stage='finetune',
+    data_fraction=1,
+    data_config=config.data_config,
 )
 
-config = DatasetConfig(
-    path='/home/user/.cache/thesis/data/preprocessed/train',
-    variables_dropout=0.2,
-    max_events=880,
-    max_minute=1440,
-    min_input_minutes=720,
-)
-dataset = PretrainDataset(config=config)
-dataset.load_data()
-num_workers = 0
-data_loader = DataLoader(dataset,
-                         # pinned_memory? persistent_worker?
-                         timeout=0 if num_workers == 0 else 100000,
-                         batch_size=64,
-                         shuffle=True,
-                         num_workers=num_workers,
-                         collate_fn=Collator())
-### warmup
-for _ in zip(range(max(1, num_workers)), data_loader):
-    ...
-
-# profiler = cProfile.Profile()
-# profiler.enable()
+dataloader = dataset_module.train_dataloader()
 start_time = time.time()
-for _ in data_loader:
-    ...
-# profiler.disable()
+for batch in tqdm(dataloader):
+    len(batch)
+
 end_time = time.time()
 total_time = end_time - start_time
 print(f"Total time: {total_time:.2f} seconds")
-print(f"Time per batch: {total_time / len(data_loader):.4f} seconds {len(data_loader) / total_time}(it/sec)")
-# Print the profiling results
-# s = StringIO()
-# ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-# ps.print_stats()
-# print(s.getvalue())

@@ -1,0 +1,21 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the model with doubled hidden dimension"
+
+checkpoint: pretrain-xl:best
+
+module_config:
+  model:
+    hid_dim: 128
+    num_heads: 16
+    num_layers: 3
+    attention_dropout: 0.0
+
+data_config:
+  train:
+    batch_size: 16
+  val:
+    batch_size: 84
+  test:
+    batch_size: 84

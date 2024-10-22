@@ -13,7 +13,7 @@ wandb = "*"
 scikit-learn = "*"
 "jsonargparse[signatures]" = "*"
 finetuning-scheduler = "*"
-#flash-attn = "*"
+#flash-attn = "2.5.8" # maximum supported by transformerenigne
 #transformerengine = {git="https://github.com/NVIDIA/TransformerEngine.git", ref="stable"}
 
 [dev-packages]

@@ -1,0 +1,7 @@
+%TAG !include! pretrain-ours.yaml
+---
+
+description: "Pretrain a single epoch for testing purposes"
+
+trainer:
+    max_epochs: 1

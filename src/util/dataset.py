@@ -1,3 +1,4 @@
+import itertools
 import os
 from dataclasses import dataclass
 
@@ -8,7 +9,13 @@ import pyarrow.dataset as ds
 from numba import jit
 from torch.utils.data import Dataset as TorchDataset
 
-from src.models.strats import FeaturesInfo
+import src.util.variable_scalers as scaler_module
+from src.models.strats_original import FeaturesInfo
+from src.util.variable_scalers import (
+    AbstractScaler,
+    DemographicScaler,
+    TimeScaler,
+)
 
 
 @dataclass(frozen=True)
@@ -24,8 +31,11 @@ class DatasetConfig:
     """ Maximum number of events in the input window """
     max_minute: int
     """ Maximum minute in the input window """
-    min_input_minutes: int  # supported only for pretrain dataset
-    """ Smallest input window size in minutes. Supported only for pretrain dataset """
+    
+    scaler_class: str
+    
+    select_top: int
+    """ Number of top variables to select, 0 to select all """
     
     def __post_init__(self):
         assert self.path is not None, "Dataset path must be provided"
@@ -33,98 +43,49 @@ class DatasetConfig:
         assert 0 <= self.variables_dropout <= 1, "Variables dropout must be in [0, 1] range"
         assert self.max_events > 0, "Max events must be positive"
         assert self.max_minute > 0, "Max minute must be positive"
-        assert self.min_input_minutes > 0, "Min input minutes must be positive"
+        
+        assert hasattr(scaler_module,
+                       self.scaler_class), f"Scaler class {self.scaler_class} not found"
 
 
-class AbstractScaler:
-    def fit(self, data: pd.DataFrame):
-        raise NotImplementedError
+@dataclass(frozen=True)
+class PretrainDatasetConfig(DatasetConfig):
+    prediction_gap: int
+    """ Gap between input and the start of prediction window"""
+    prediction_window: int
+    """ The size (in minutes) of the prediction window over which the values will be averaged """
+    min_input_minutes: int
+    """ Smallest input window size in minutes"""
     
-    def transform(self, data: pd.DataFrame):
-        raise NotImplementedError
-    
-    def fit_transform(self, data: pd.DataFrame):
-        self.fit(data)
-        return self.transform(data)
-
-
-class VariableScaler(AbstractScaler):
-    variable_means: np.ndarray
-    variable_stds: np.ndarray
-    variable_categories: list[str]
-    
-    def __eq__(self, other):
-        return (
-            isinstance(other, VariableScaler)
-            and np.array_equal(self.variable_means, other.variable_means)
-            and np.array_equal(self.variable_stds, other.variable_stds)
-            and self.variable_categories == other.variable_categories
-        )
-    
-    def fit(self, events: pd.DataFrame):
-        self.variable_categories = events['variable'].cat.categories.to_list()
-        variable_stats = (events.groupby('variable', observed=False)
-                          .agg(mean=('value', 'mean'), std=('value', 'std'))
-                          .sort_index())
-        # some vars have only single value, so their std is 0.
-        variable_stats.loc[variable_stats['std'].isin([float(0), float('nan')]), 'std'] = 1
-        self.variable_means = variable_stats['mean'].to_numpy()
-        self.variable_stds = variable_stats['std'].to_numpy()
-        return self
-    
-    def transform(self, events: pd.DataFrame):
-        return events.assign(value=(events['value'] - self.variable_means[
-            events['variable'].cat.codes]) /
-                                   self.variable_stds[events['variable'].cat.codes])
-    
-    def fit_transform(self, events: pd.DataFrame):
-        self.fit(events)
-        return self.transform(events)
-
-
-# fixme: rename to DemographicScaler
-class DemographicsScaler(AbstractScaler):
-    age_mean: float
-    age_std: float
-    
-    def __eq__(self, other):
-        return (
-            isinstance(other, DemographicsScaler)
-            and self.age_mean == other.age_mean
-            and self.age_std == other.age_std
-        )
-    
-    def fit(self, demographics: pd.DataFrame):
-        self.age_mean, self.age_std = demographics['age'].agg(['mean', 'std'])
-        return self
-    
-    def transform(self, demographics: pd.DataFrame):
-        return demographics.assign(
-            age=(demographics['age'] - self.age_mean) / self.age_std,
-            gender=(demographics['gender'] * 2 - 1)
-        )
+    def __post_init__(self):
+        super().__post_init__()
+        assert self.prediction_gap >= 0, "Prediction gap must be non-negative"
+        assert self.prediction_window > 0, "Prediction window must be positive"
 
 
 class AbstractDataset(TorchDataset):
     def __init__(self, config: DatasetConfig):
+        self.max_events = config.max_events
+        self.max_minute = config.max_minute
         self.config = config
-        
-        self.max_events = np.int64(config.max_events)
-        self.max_minute = np.float32(config.max_minute)
-        self.min_input_minutes = np.int64(config.min_input_minutes)
-        
         self.data = None
+        self.rng = np.random.default_rng()
         
         events_pq = ds.dataset(os.path.join(config.path, 'events.parquet'), format='parquet')
         scanner = events_pq.scanner(columns=['variable'])
         self.num_variables = np.int16(pc.count_distinct(scanner.to_table()['variable']).as_py())
-        
+        if self.config.select_top > 0:
+            self.num_variables = min(
+                self.num_variables,
+                self.config.select_top,
+            )
         demographic_pq = ds.dataset(
             os.path.join(config.path, 'demographics.parquet'), format='parquet')
         self.num_demographics = np.int16(len(set(demographic_pq.schema.names) - {'stay_id'}))
         
-        self.variable_scaler: VariableScaler | None = None
-        self.demographic_scaler: DemographicsScaler | None = None
+        self.variable_scaler: AbstractScaler | None = None
+        self.demographic_scaler: DemographicScaler | None = None
+        self.time_scaler: TimeScaler | None = None
     
     def __len__(self):
         return len(self.data)
@@ -136,15 +97,17 @@ class AbstractDataset(TorchDataset):
     def get_scalers(self):
         return {
             'variable_scaler': self.variable_scaler,
-            'demographic_scaler': self.demographic_scaler
+            'demographic_scaler': self.demographic_scaler,
+            'time_scaler': self.time_scaler
         }
     
     def set_scalers(self, scalers: dict):
         if self.data is not None:
             raise ValueError("Scalers have to be copied before loading data")
-        self.variable_scaler = scalers['variable_scaler']
+        self.variable_scaler: AbstractScaler = scalers['variable_scaler']
         self.demographic_scaler = scalers['demographic_scaler']
-        self.num_variables = len(self.variable_scaler.variable_categories)
+        self.time_scaler = scalers['time_scaler']
+        self.num_variables = self.variable_scaler.num_variables
     
     def get_features_info(self) -> FeaturesInfo:
         return FeaturesInfo(
@@ -155,92 +118,15 @@ class AbstractDataset(TorchDataset):
     def load_data(self):
         raise NotImplementedError
     
-    # @profile
     def _drop_variables(
         self,
         minutes: np.ndarray,
         variables: np.ndarray,
         values: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
-        vals, inverse_index = np.unique(variables, return_inverse=True)
-        # generate random floats size of vals
-        keep_vars = np.random.rand(len(vals)) > self.config.variables_dropout
-        idx = keep_vars[inverse_index]
-        variables = variables[idx]
-        
-        if len(variables) == 0:
-            return None
-        
-        return minutes[idx], variables, values[idx]
-
-
-class MemDataset(TorchDataset):
-    """
-    A simple in-memory dataset.
-    """
-    
-    def __init__(self, dataset: TorchDataset):
-        self.data = [dataset[i] for i in range(len(dataset))]
-    
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        return self.data[idx]
-
-
-class PretrainDataset(AbstractDataset):
-    def load_data(self):
-        events = pd.read_parquet(
-            os.path.join(self.config.path, 'events.parquet'),
-            columns=['stay_id', 'value', 'variable', 'minute']
-        )
-        
-        if self.variable_scaler is None:
-            events = events.astype({'variable': 'category'})
-            variable_type = events['variable'].dtype
-            self.variable_scaler = VariableScaler().fit(events)
-        else:
-            variable_type = pd.CategoricalDtype(categories=self.variable_scaler.variable_categories)
-            events = events.astype({'variable': variable_type})
-        
-        events = self.variable_scaler.transform(events).astype({'value': 'float32'})
-        events['variable'] = events['variable'].cat.codes.astype('int32')
-        
-        assert self.num_variables == len(variable_type.categories)
-        
-        demographics = pd.read_parquet(os.path.join(self.config.path, 'demographics.parquet')) \
-            .set_index('stay_id')
-        if self.demographic_scaler is None:
-            self.demographic_scaler = DemographicsScaler()
-            self.demographic_scaler.fit(demographics)
-        
-        demographics = self.demographic_scaler.transform(demographics).astype('float32')
-        assert self.num_demographics == demographics.columns.size
-        
-        self.data = {}
-        for stay_id, stay_events in events.groupby('stay_id'):
-            timestamps = stay_events['minute'].unique()
-            stay_events.sort_values('minute', inplace=True)
-            stay_data = {
-                'variable': stay_events['variable'].to_numpy(),
-                'minute': stay_events['minute'].to_numpy(dtype='float32'),
-                'value': stay_events['value'].to_numpy(),
-                'demographics': demographics.loc[stay_id].to_numpy(),
-                # all unique minutes more than 720 and less than max
-                # possible values for prediction window start time
-                't1s': timestamps[
-                    (timestamps >= self.min_input_minutes) & (timestamps < timestamps.max())],
-            }
-            if len(stay_data['t1s']) > 0:
-                self.data[stay_id] = stay_data
-        
-        self.stay_ids = list(self.data.keys())
-    
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state.pop('data')
-        return state
+        keep_vars = self.rng.random(self.num_variables) > self.config.variables_dropout
+        idx = np.where(keep_vars[variables])[0]
+        return minutes[idx], variables[idx], values[idx]
     
     def _select_window(
         self,
@@ -251,13 +137,109 @@ class PretrainDataset(AbstractDataset):
         t1
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         end_idx = minutes.searchsorted(t1, 'right')
-        start_idx = max(minutes.searchsorted(t0, 'left'), end_idx - self.max_events)
-        
+        start_idx = minutes.searchsorted(t0, 'left')
         minutes = minutes[start_idx:end_idx]
         variables = variables[start_idx:end_idx]
         values = values[start_idx:end_idx]
         
         return minutes, variables, values
+
+
+class MemDataset(TorchDataset):
+    """
+    A simple in-memory dataset. Should only be used for val and test datasets.
+    """
+    
+    def __init__(self, dataset: TorchDataset):
+        # sort by length of values to reduce padding size during collation
+        # use reverse order to have longest sequences first, so the memory is allocated only once
+        self.data = sorted([dataset[i] for i in range(len(dataset))],
+                           key=lambda x: len(x['values']), reverse=True)
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+
+class PretrainDataset(AbstractDataset):
+    def __init__(self, config: PretrainDatasetConfig):
+        super().__init__(config)
+        self.config = config
+    
+    # @profile
+    def load_data(self):
+        events = pd.read_parquet(
+            os.path.join(self.config.path, 'events.parquet'),
+            columns=['stay_id', 'value', 'variable', 'minute'],
+        )
+        if self.config.select_top > 0:
+            top_variables = events['variable'].value_counts().nlargest(self.config.select_top).index
+            events = events[events['variable'].isin(top_variables)]
+        
+        if self.variable_scaler is None:
+            events = events.astype({'variable': 'category'})
+            variable_type = events['variable'].dtype
+            VariableScaler = getattr(scaler_module, self.config.scaler_class)
+            self.variable_scaler = VariableScaler().fit(events)
+            self.time_scaler = TimeScaler(self.config.max_minute)
+        else:
+            variable_type = pd.CategoricalDtype(categories=self.variable_scaler.variable_categories)
+            events = events.astype({'variable': variable_type})
+        
+        demographics = pd.read_parquet(os.path.join(self.config.path, 'demographics.parquet')) \
+            .set_index('stay_id')
+        
+        if self.demographic_scaler is None:
+            self.demographic_scaler = DemographicScaler()
+            self.demographic_scaler.fit(demographics)
+        
+        events = self.variable_scaler.transform(events).astype({'value': 'float32'})
+        events['variable'] = events['variable'].cat.codes.astype('int32')
+        events.sort_values('minute', inplace=True)
+        
+        assert self.num_variables == len(variable_type.categories)
+        
+        demographics = self.demographic_scaler.transform(demographics).astype('float32')
+        assert self.num_demographics == demographics.columns.size
+        
+        self.data = {}
+        for stay_id, stay_events in events.groupby('stay_id', sort=False):
+            minutes = stay_events['minute'].to_numpy()
+            minutes -= minutes[0]
+            
+            timestamps = np.unique(minutes)
+            # >= min_input_minutes
+            min_t1_idx = timestamps.searchsorted(self.config.min_input_minutes, 'left')
+            # < max - gap
+            max_t1_idx = timestamps.searchsorted(
+                minutes[-1] - self.config.prediction_gap, 'right') - 1
+            
+            t1s = timestamps[min_t1_idx:max_t1_idx]
+            
+            if len(t1s) == 0:
+                continue
+            
+            self.rng.shuffle(t1s)
+            t1s = itertools.cycle(t1s)
+            
+            self.data[stay_id] = {
+                'variable': stay_events['variable'].to_numpy(),
+                'minute': minutes,
+                'value': stay_events['value'].to_numpy(),
+                'demographics': demographics.loc[stay_id].to_numpy(),
+                # all unique minutes more than 720 and less than max
+                # possible values for prediction window start time - pred_gap
+                't1s': t1s,
+            }
+        
+        self.stay_ids = list(self.data.keys())
+    
+    # def __getstate__(self):
+    #     state = self.__dict__.copy()
+    #     state.pop('data')
+    #     return state
     
     @staticmethod
     @jit
@@ -295,11 +277,9 @@ class PretrainDataset(AbstractDataset):
         stay_id = self.stay_ids[idx]
         sample = self.data[stay_id]
         
-        # TODO: check if it will work as well if we randomly select t1 from minutes index
-        
         window = None
-        while window is None:
-            t1 = np.random.choice(sample['t1s'])
+        while window is None or len(window[0]) == 0:
+            t1 = next(sample['t1s'])  # end of input window
             t0 = t1 - self.max_minute
             
             window = self._select_window(
@@ -308,29 +288,41 @@ class PretrainDataset(AbstractDataset):
             if self.config.variables_dropout > 0:
                 window = self._drop_variables(*window)
         
-        input_minutes, input_variables, input_values = window
+        minutes, variables, values = window
         # normalize time to [-1,1] range
-        input_times = (input_minutes - input_minutes[0]) / self.max_minute * 2 - 1
+        times = self.time_scaler.transform(minutes).astype(np.float32)
         
-        t2 = t1 + 120  # prediction window is 2 hrs
+        t1_prime = t1 + self.config.prediction_gap  # start of prediction window
+        t2 = t1_prime + self.config.prediction_window
         forecast_values, forecast_mask = self._get_forecast_data(
-            sample['minute'], sample['variable'], sample['value'], t1, t2
+            sample['minute'], sample['variable'], sample['value'], t1_prime, t2
         )
         
-        return {
-            'values': input_values,
-            'times': input_times,
-            'variables': input_variables,
-            'demographics': sample['demographics'],
-            'forecast_values': forecast_values,
-            'forecast_mask': forecast_mask
-        }
+        if (num_samples := len(values)) <= self.max_events:
+            return {
+                'values': values,
+                'times': times,
+                'variables': variables,
+                'demographics': sample['demographics'],
+                'forecast_values': forecast_values,
+                'forecast_mask': forecast_mask
+            }
+        else:
+            selected_events = self.rng.choice(num_samples, size=self.max_events, replace=False)
+            return {
+                'values': values[selected_events],
+                'times': times[selected_events],
+                'variables': variables[selected_events],
+                'demographics': sample['demographics'],
+                'forecast_values': forecast_values,
+                'forecast_mask': forecast_mask
+            }
 
 
 class FinetuneDataset(AbstractDataset):
     def load_data(self):
         if self.variable_scaler is None or self.demographic_scaler is None:
-            raise ValueError("Variable and demographic scalers must be set before loading data")
+            raise ValueError("Scalers must be set before loading data")
         
         variables_type = pd.CategoricalDtype(categories=self.variable_scaler.variable_categories)
         
@@ -342,57 +334,55 @@ class FinetuneDataset(AbstractDataset):
             os.path.join(self.config.path, 'events.parquet'),
             columns=['stay_id', 'value', 'variable', 'minute'],
             filters=[
-                ('minute', '<=', self.max_minute),
-                # only first 24h # TODO: try to randomly select 24h window, at least for training
-                ('stay_id', 'in', mortality_labels.index)
-            ]
-        ) \
-            .astype({'variable': variables_type})
+                ('stay_id', 'in', mortality_labels.index),
+                ('variable', 'in', self.variable_scaler.variable_categories)
+            ]) \
+            .astype({'variable': variables_type}) \
+            .set_index('stay_id')
         
         events = self.variable_scaler.transform(events).astype({'value': 'float32'})
         events['variable'] = events['variable'].cat.codes.astype('int32')
-        events['time'] = (events['minute'] / self.max_minute * 2 - 1).astype('float32')
+        events.sort_values('minute', inplace=True)
         
         demographics = pd.read_parquet(os.path.join(self.config.path, 'demographics.parquet')) \
             .set_index('stay_id')
-        # TODO: sort columns to ensure consistent order
+        # TODO: sort columns to ensure consistent order among different splits
         demographics = self.demographic_scaler.transform(demographics).astype('float32')
         self.num_demographics = demographics.columns.size
         
         self.data = {}
         
-        for stay_id, stay_events in events.groupby('stay_id'):
-            stay_data = {
-                'variables': stay_events['variable'].to_numpy(),
-                'times': stay_events['time'].to_numpy(),
-                'values': stay_events['value'].to_numpy(),
-                # use array for label to collate later
-                'label': np.array([mortality_labels.loc[stay_id, 'died']]),
-                'demographics': demographics.loc[stay_id].to_numpy()
+        for stay_id, stay_events in events.groupby('stay_id', sort=False):
+            minutes = stay_events['minute'].to_numpy()
+            minutes = minutes - minutes[0]
+            slice_to = minutes.searchsorted(self.config.max_minute, 'right')
+            
+            self.data[stay_id] = {
+                'variables': stay_events['variable'].to_numpy()[:slice_to],
+                'minutes': minutes[:slice_to],
+                'values': stay_events['value'].to_numpy()[:slice_to],
+                'demographics': demographics.loc[stay_id].to_numpy(),
+                # use array for label to simplify collation
+                'label': np.array([mortality_labels.loc[stay_id, 'died']])
             }
-            self.data[stay_id] = stay_data
         self.stay_ids = list(self.data.keys())
     
-    # def prevalence(self):
-    #     return sum([data['label'][0] for data in self.data.values()]) / len(self.data)
-    
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> dict:
         stay_id = self.stay_ids[idx]
         stay = self.data[stay_id]
         
         triplets = None
-        if self.config.variables_dropout > 0:
-            while triplets is None:
-                triplets = self._drop_variables(
-                    stay['times'], stay['variables'], stay['values'])
-        else:
-            triplets = stay['times'], stay['variables'], stay['values']
+        while triplets is None or len(triplets[0]) == 0:
+            triplets = stay['minutes'], stay['variables'], stay['values']
+            
+            if self.config.variables_dropout > 0:
+                triplets = self._drop_variables(*triplets)
         
-        times, variables, values = triplets
+        minutes, variables, values = triplets
+        # normalize time to [-1,1] range, use the same scale as in pretrain dataset
+        times = self.time_scaler.transform(minutes).astype(np.float32)
         
-        num_samples = len(values)
-        
-        if num_samples <= self.max_events:
+        if (num_samples := len(values)) <= self.max_events:
             return {
                 'values': values,
                 'times': times,

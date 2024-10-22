@@ -1,0 +1,14 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Our main baseline model with double the number of heads"
+
+trainer:
+  gradient_clip_val: 0.3
+
+module_config:
+  model:
+    attention_dropout: 0.2
+
+  optimizer:
+    fused: false # Fused optimizer does not support gradient clipping

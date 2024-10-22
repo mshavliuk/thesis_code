@@ -1,9 +1,0 @@
-%TAG !include! ./finetune.yaml
----
-name: test-finetune-two-phases
-description: "Finetune the model with the backbone and forecast layer frozen during the first epoch and then unfrozen for the rest of the training"
-
-ft_schedule: 'experiments/test-schedule-finetune-two-phases.yaml'
-
-trainer:
-  max_epochs: 120

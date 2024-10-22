@@ -1,0 +1,15 @@
+%TAG !include! ./pretrain-base.yaml
+---
+
+
+description: "Pretrain the model with ECDF scaler and sigmoid activation function"
+
+common_dataset:
+  scaler_class: 'VariableECDFScaler'
+
+module_config:
+  model:
+    num_heads: 8
+    head_layers:
+      - 'forecast_fc'
+      - 'sigmoid'

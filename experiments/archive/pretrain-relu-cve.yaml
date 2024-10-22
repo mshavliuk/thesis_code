@@ -1,0 +1,10 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "all the same but with relu activation in cve and wider hidden dim (equal to hid_dim)"
+
+module_config:
+  model_name: Strats_relu_cve
+
+  model:
+    attention_dropout: 0.0 # make pretraining faster and still fine?

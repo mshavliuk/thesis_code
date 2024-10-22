@@ -1,0 +1,8 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model with double (64-bit) precision"
+
+
+trainer:
+  precision: 64-true

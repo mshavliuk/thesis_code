@@ -1,0 +1,10 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model with no forecast head"
+
+module_config:
+  model:
+    head_layers:
+#      - 'forecast_fc'
+      - 'binary_fc'

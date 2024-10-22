@@ -1,8 +1,0 @@
-%TAG !include! ./finetune.yaml
----
-description: "Finetune on original Strats data and hyperparams, with weighted loss turned off"
-name: finetune-no-weighted-loss
-
-module_config:
-  weighted_loss: false
-

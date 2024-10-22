@@ -1,0 +1,37 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune with ecdf scaling, better dataset, random 24h windows, and with the best model from pretraining"
+
+
+checkpoint: pretrain-all-best:best
+
+module_config:
+  model_name: strats_speed
+  model:
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'
+
+common_dataset:
+  scaler_class: 'VariableECDFScaler'
+  max_minute: 2880 # 48 * 60
+
+data_configd:
+  train:
+    random_window: true
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/train
+
+  val:
+    repeat_times: 3
+    random_window: true
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/val
+
+  test:
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/test
+
+trainer:
+  max_epochs: 120
+
+early_stop_callback:
+  patience: 10

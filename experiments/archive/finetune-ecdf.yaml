@@ -1,0 +1,16 @@
+%TAG !include! ./base_config.yaml
+---
+description: "Finetune the model with ECDF scaler from the model which had sigmoid activation function during pretraining, but removed during finetuning"
+
+
+checkpoint: pretrain-ecdf:best
+
+common_dataset:
+  scaler_class: 'VariableECDFScaler'
+
+module_config:
+  model:
+    num_heads: 8
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'

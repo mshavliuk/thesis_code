@@ -1,0 +1,10 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the model from scratch (pretraining excluded)"
+
+checkpoint: pretrain-zero:best
+
+
+trainer:
+    max_epochs: 200

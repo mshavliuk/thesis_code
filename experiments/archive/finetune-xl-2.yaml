@@ -1,0 +1,42 @@
+%TAG !include! ./base_config.yaml
+---
+description: "Finetune the large model"
+
+
+checkpoint: pretrain-xl-2:best
+
+
+module_config:
+  model_name: StratsOurs
+  model:
+    hid_dim: 128 # double
+    num_layers: 4 # double
+    num_heads: 16 # same number of heads, so each has twice the number of features
+    dropout: 0.2
+    attention_dropout: 0.0 # no dropout for faster flash attention
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'
+  optimizer:
+    lr: 5.0e-4
+    fused: true
+
+common_dataset:
+  max_events: 1024
+  max_minute: 1440 # 24 * 60
+  min_input_minutes: 720 # 12*60
+  scaler_class: 'VariableStandardScaler'
+  balanced: false
+
+trainer:
+  accumulate_grad_batches: 3 # 30 items per update
+
+data_config:
+  train:
+    batch_size: 10
+
+  val:
+    batch_size: 14
+
+  test:
+    batch_size: 14

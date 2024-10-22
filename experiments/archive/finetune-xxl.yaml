@@ -1,0 +1,22 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the model with quadruple hidden dimension"
+
+checkpoint: pretrain-xxl:best
+
+module_config:
+  model:
+    hid_dim: 256
+    num_heads: 16
+    num_layers: 4
+    attention_dropout: 0.0
+
+data_config:
+  train:
+    batch_size: 16
+  val:
+    batch_size: 56
+  test:
+    batch_size: 56
+

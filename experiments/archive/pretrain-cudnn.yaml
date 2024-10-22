@@ -1,0 +1,7 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Try to speedup original strats model with flash attention"
+
+module_config:
+  model_name: Strats_cudnn

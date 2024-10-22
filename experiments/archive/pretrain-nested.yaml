@@ -1,0 +1,23 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Try to use nested tensors"
+
+module_config:
+  model_name: Strats_nested
+
+data_config:
+  collator: 'JaggedCollator'
+
+#
+#  train:
+#    batch_size: 4
+#    path: ./src/util/tests/data
+#
+#  val:
+#    batch_size: 4
+#    path: ./src/util/tests/data
+#
+#  test:
+#    batch_size: 4
+#    path: ./src/util/tests/data

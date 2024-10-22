@@ -1,5 +1,11 @@
 import os
 from argparse import Namespace
+from pathlib import Path
+from types import UnionType
+from typing import (
+    Literal,
+    get_origin,
+)
 
 import yaml
 from yaml import (
@@ -39,7 +45,7 @@ class MergeLoader(SafeLoader):
     def merge_nodes(self, base_node: yaml.Node, new_node: yaml.Node) -> yaml.Node:
         if type(base_node) != type(new_node):
             return new_node
-        elif isinstance(base_node, ScalarNode):
+        elif isinstance(base_node, (ScalarNode, SequenceNode)):
             base_node.value = new_node.value
             base_node.tag = new_node.tag
         elif isinstance(base_node, MappingNode):
@@ -61,9 +67,6 @@ class MergeLoader(SafeLoader):
                     else:
                         base_node.value[child_index] = (new_key, self.merge_nodes(child, new_value))
         
-        
-        elif isinstance(base_node, SequenceNode):
-            base_node.value.extend(new_node.value)
         else:
             raise ValueError(f"Cannot merge {type(base_node)} with {type(new_node)}")
         
@@ -88,12 +91,29 @@ class ConfigNamespace(Namespace):
                 break
             annotations.update(cls.__annotations__)
         for prop, field_type in annotations.items():
-            if prop not in kwargs:
-                raise ValueError(f'Missing required field: {prop}')
-            if isinstance(kwargs[prop], field_type):
-                setattr(self, prop, kwargs[prop])
+            if get_origin(field_type) is UnionType:
+                field_types = field_type.__args__
             else:
-                setattr(self, prop, field_type(**kwargs[prop]))
+                field_types = [field_type]
+            
+            if prop not in kwargs:
+                if not hasattr(self, prop):
+                    raise ValueError(f'Missing required field: {prop}')
+                continue
+            
+            for _field_type in field_types:
+                if isinstance(kwargs[prop], _field_type):
+                    setattr(self, prop, kwargs[prop])
+                    break
+                elif isinstance(kwargs[prop], dict):
+                    setattr(self, prop, _field_type(**kwargs[prop]))
+                    break
+                elif kwargs[prop] is not None:
+                    setattr(self, prop, _field_type(kwargs[prop]))
+                    break
+            else:
+                raise ValueError(f'Invalid type for field {prop}: {type(kwargs[prop])}')
+
 
 class MainConfig(ConfigNamespace):
     description: str
@@ -102,25 +122,16 @@ class MainConfig(ConfigNamespace):
     data_config: dict
     module_config: dict
     wandb_logger: dict
-    checkpoint: str
+    checkpoint: str | None = None
     trainer: dict
     checkpoint_callback: dict
     early_stop_callback: dict
-    results_dir: str
-    ft_schedule: str
-    
 
 
 def read_config(file_path: str) -> MainConfig:
-    with open(file_path, 'r') as f:
+    file = Path(file_path)
+    with file.open('r') as f:
         config = yaml.load(f, Loader=MergeLoader)
+    config['name'] = file.stem
     config = MainConfig(config)
-    
-    if config.ft_schedule is not None:
-        with open(config.ft_schedule, 'r') as f:
-            config.ft_schedule = yaml.safe_load(f)
-        
-        if (lr := config.ft_schedule.get(0, {}).get('lr', None)) is not None:
-            config.module_config['optimizer']['lr'] = lr
-    
     return config

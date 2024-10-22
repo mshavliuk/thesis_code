@@ -63,3 +63,5 @@ class TestDatasetConfig:
     def test_dataset_config_throws_when_path_does_not_exist(self):
         with pytest.raises(AssertionError):
             DatasetConfig(path='non_existent_dir')
+
+

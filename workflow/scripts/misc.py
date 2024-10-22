@@ -65,3 +65,20 @@ def get_jackson_pratt_itemids(outputevents: DataFrame) -> list:
     items = d_labitems.filter(F.col('LABEL').contains('jackson'))
     ids = items.select('ITEMID').distinct().rdd.flatMap(lambda x: x).collect()
     return ids
+
+
+def sample_events(events: DataFrame, n: int):
+    """
+    Sample no more than n events (with a small deviation) for every variable.
+    :param events:
+    :param n: sample count
+    :return:
+    """
+    fractions = (
+        events.groupby('variable')
+        .count()
+        .withColumn('fraction', F.least(F.lit(1), F.lit(n) / F.col('count')))
+        .drop('count')
+        .rdd.collectAsMap()
+    )
+    return events.sampleBy('variable', fractions=fractions)

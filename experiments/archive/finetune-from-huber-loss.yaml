@@ -1,0 +1,6 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune from the model pretrained with Huber loss"
+
+checkpoint: pretrain-huber-loss:best

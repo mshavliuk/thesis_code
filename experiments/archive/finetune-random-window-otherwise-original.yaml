@@ -1,0 +1,22 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model with randomly sampled 24h windows during training and better dataset"
+
+
+data_config:
+  train:
+    random_window: true
+    path: /home/user/.cache/thesis/data/original_strats_data/train
+
+  val:
+    path: /home/user/.cache/thesis/data/original_strats_data/val
+
+  test:
+    path: /home/user/.cache/thesis/data/original_strats_data/test
+
+trainer:
+  max_epochs: 120
+
+early_stop_callback:
+  patience: 15

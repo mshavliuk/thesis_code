@@ -1,9 +1,0 @@
-%TAG !include! ./finetune.yaml
----
-name: finetune-freeze-backbone-and-forecast
-description: "Finetune the model with the backbone and forecast layer frozen"
-
-module_config:
-  optimizer:
-    trained_parameters:
-      - head.binary_fc

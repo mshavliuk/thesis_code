@@ -1,0 +1,29 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model"
+
+checkpoint: pretrain-original-strats:best
+
+common_dataset:
+  select_top: 0 # select all 129 variables
+
+module_config:
+  weighted_loss: true
+  model_name: StratsOriginal
+  disable_bias_norm_decay: false
+  model:
+    attention_dropout: 0.2
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 16
+    dropout: 0.2
+
+  optimizer:
+    fused: false # Fused optimizer does not support clipping
+
+
+trainer:
+  max_epochs: 60
+  gradient_clip_val: 0.3
+  precision: bf16-mixed

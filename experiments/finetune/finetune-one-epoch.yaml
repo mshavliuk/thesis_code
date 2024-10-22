@@ -1,0 +1,6 @@
+%TAG !include! ./finetune-ours.yaml
+---
+description: "Finetune for one epoch"
+
+trainer:
+    max_epochs: 1

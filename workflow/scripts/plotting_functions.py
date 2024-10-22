@@ -1,17 +1,19 @@
 import os
 from itertools import islice
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib import (
     cm,
 )
 from pyspark.sql.types import (
-    ArrayType,
     IntegerType,
     StringType,
     StructField,
     StructType,
 )
+
 
 def get_plot_variables_distribution(plots_dir: str):
     """
@@ -27,80 +29,96 @@ def get_plot_variables_distribution(plots_dir: str):
         StructField("file_path", StringType(), False),
     ])
     
-    def plot_variable_distribution(
+    def _plot_variable_distribution(
         variable_name: tuple[str],
         events: pd.DataFrame,
         variable_data: pd.DataFrame
-    ) -> pd.DataFrame:
-        import seaborn as sns
-        import matplotlib.pyplot as plt
-        import re
-        import pandas as pd
-        import numpy as np
-        
-        variable_name = variable_name[0]
-        
-        # Determine the number of bins dynamically
-        bin_edges = np.histogram_bin_edges(events['value'], bins='auto')
-        if len(bin_edges) > 30:
-            bin_edges = np.histogram_bin_edges(events['value'], bins=30)
-        events['code'] = events['code'].fillna(0).astype(int)
-        
-        fig, ax = plt.subplots(figsize=(14, 7))
-        
-        sns.histplot(
-            data=events,
-            x='value',
-            hue='code',
-            kde=False,
-            color='skyblue',
-            palette='colorblind',
-            stat='density',
-            multiple='stack',
-            bins=bin_edges,
-            ax=ax,
-        )
-        
-        code_to_name = variable_data.set_index('code')['variable'].to_dict()
-        legend = ax.get_legend()
-        legend.set_loc('upper right')
-        for text in legend.get_texts():
-            if (code := int(text.get_text())) in code_to_name:
-                text.set_text(code_to_name[code])
-        
-        unit = events['unit'].iloc[0]
-        ax.set_xlabel(unit)
-        
-        fig.tight_layout()
-        
-        file_name = 'hist_' + re.sub(r"[^a-zA-Z0-9]", "_", variable_name) + ".eps"
-        file_path = f'{plots_dir}/{file_name}'
-        try:
-            fig.savefig(file_path, dpi=300)
-            fig.show()
-        except Exception as e:
-            print(f"Failed to save plot for group {variable_name}: {e}")
-        finally:
-            plt.close(fig)
-        return pd.DataFrame(data=[[variable_name, file_path]])
+    ):
+        return plot_variable_distribution(variable_name, events, variable_data, plots_dir)
     
-    return plot_variable_distribution, schema
+    return _plot_variable_distribution, schema
+
+
+def plot_variable_distribution(
+    variable_name: tuple[str],
+    events: pd.DataFrame,
+    variable_data: pd.DataFrame,
+    plots_dir: str | None = None,
+    bin_edges: np.ndarray | None = None,
+    ax: plt.Axes = None,
+) -> pd.DataFrame | None:
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import re
+    import pandas as pd
+    import numpy as np
+    
+    variable_name = variable_name[0]
+    
+    if bin_edges is None:
+        # Determine the number of bins dynamically
+        bin_lim = 30
+        bin_edges = np.histogram_bin_edges(events['value'], bins='auto')
+        if len(bin_edges) > bin_lim:
+            bin_edges = np.histogram_bin_edges(events['value'], bins=bin_lim)
+    events['code'] = events['code'].fillna(0).astype(int)
+    
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(14, 7))
+    else:
+        fig = ax.get_figure()
+    
+    sns.histplot(
+        data=events,
+        x='value',
+        hue='code',
+        kde=False,
+        color='skyblue',
+        palette='colorblind',
+        stat='density',
+        multiple='stack',
+        bins=bin_edges,
+        ax=ax,
+    )
+    
+    code_to_name = variable_data.set_index('code')['variable'].to_dict()
+    legend = ax.get_legend()
+    legend.set_loc('upper right')
+    for text in legend.get_texts():
+        if (code := int(text.get_text())) in code_to_name:
+            text.set_text(code_to_name[code])
+    
+    unit = events['unit'].iloc[0]
+    ax.set_xlabel(unit)
+    
+    fig.tight_layout()
+    
+    if plots_dir is None:
+        return
+    
+    file_name = 'hist_' + re.sub(r"[^a-zA-Z0-9]", "_", variable_name) + ".pdf"
+    file_path = f'{plots_dir}/{file_name}'
+    try:
+        from workflow.scripts.util import get_fig_box
+        fig.savefig(file_path, dpi=300, bbox_inches=get_fig_box(fig))
+        fig.show()
+    except Exception as e:
+        print(f"Failed to save plot for group {variable_name}: {e}")
+    finally:
+        plt.close(fig)
+    return pd.DataFrame(data=[[variable_name, file_path]])
 
 
 def get_plot_patient_journey(
     plots_dir: str,
     statistics: pd.DataFrame,
-    /,
-    file_formats: list[str] = None,
 ):
-    if file_formats is None:
-        file_formats = ['png', 'eps', 'svg']
     plots_dir = os.path.abspath(plots_dir)
     os.makedirs(plots_dir, exist_ok=True)
     
     schema = StructType([
         StructField("stay_id", IntegerType(), False),
-        StructField("file_paths", ArrayType(StringType()), False),
+        StructField("file_path", StringType(), False),
     ])
     
     statistics = statistics.set_index('variable')[['p0.01', 'p0.99']]
@@ -141,7 +159,7 @@ def get_plot_patient_journey(
         
         fig.tight_layout()
         
-        patient_events = patient_events.astype({            'value': 'int16',        })
+        patient_events = patient_events.astype({'value': 'int16', })
         
         # use relative time
         patient_events['time'] = patient_events['minute'] / 60
@@ -259,20 +277,16 @@ def get_plot_patient_journey(
         # cbar.set_ticks([])  # Remove existing ticks
         
         axes[-1].set_xlabel('Hours from ICU admission')
-        file_paths = []
-
+        file_path = f'{plots_dir}/journey_{stay_id}.pdf'
+        
         try:
-            for file_format in file_formats:
-                file_name = f"journey_{stay_id}.{file_format}"
-                file_path = f'{plots_dir}/{file_name}'
-                file_paths.append(file_path)
-                fig.savefig(file_path)
-            # fig.show()
+            from workflow.scripts.util import get_fig_box
+            fig.savefig(file_path, bbox_inches=get_fig_box(fig))
         except Exception as e:
             print(f"Failed to save plot for group {stay_id}: {e}")
         finally:
             plt.close(fig)
-        return pd.DataFrame(data=[[stay_id, file_paths]])
+        return pd.DataFrame(data=[[stay_id, file_path]])
     
     return plot_patient_journey, schema
 
@@ -291,7 +305,6 @@ def get_group_boxes(ax_titles, fig, margin):
         
         group_boxes[source] = (x0, y0, x1, y1)
     return group_boxes
-
 
 
 def pickle_args(variables, group_one, group_two):

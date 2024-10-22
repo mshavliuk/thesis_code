@@ -1,0 +1,23 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the model pretrained on 48h window"
+
+checkpoint: pretrain-48h:best
+
+module_config:
+  model_name: strats_speed
+
+  model:
+    attention_dropout: 0.0
+
+
+data_config:
+  train:
+    max_minute: 2880
+
+  val:
+    max_minute: 2880
+
+  test:
+    max_minute: 1440 # 24 * 60

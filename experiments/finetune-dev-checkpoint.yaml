@@ -1,7 +1,0 @@
-%TAG !include! ./finetune.yaml
----
-description: "Finetune model for 1 epoch, mostly for just testing the setup"
-name: finetune-dev-checkpoint
-
-#checkpoint: /home/user/.cache/thesis/dev-checkpoints/pretrain/strats-epoch=3-val_epoch_loss=0.66-v1.ckpt
-checkpoint: original_strats:pretrain

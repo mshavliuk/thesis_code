@@ -1,0 +1,10 @@
+%TAG !include! ./base_config.yaml
+---
+description: "Finetune with small batch size to evaluate the effect of weighted BCE loss"
+
+module_config:
+  weighted_loss: true
+
+data_config:
+  train:
+    batch_size: 4

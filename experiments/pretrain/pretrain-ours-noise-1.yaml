@@ -1,0 +1,15 @@
+%TAG !include! pretrain-ours.yaml
+---
+
+description: "Our main baseline model with noise added (p=0.2, m=0.5)"
+
+data_config:
+  train:
+    path: /home/user/.cache/thesis/data/noisy_p0.2_m0.5/train
+
+  val:
+    path: /home/user/.cache/thesis/data/noisy_p0.2_m0.5/val
+
+  test:
+    path: /home/user/.cache/thesis/data/noisy_p0.2_m0.5/test
+

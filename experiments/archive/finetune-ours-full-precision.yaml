@@ -1,0 +1,23 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model with full (32-bit) precision"
+
+checkpoint: pretrain-ours:best
+
+trainer:
+  precision: 32-true
+
+
+module_config:
+  model_name: strats_speed
+
+  model:
+    num_heads: 8
+    attention_dropout: 0
+
+data_config:
+  val:
+    batch_size: 128
+  test:
+    batch_size: 128

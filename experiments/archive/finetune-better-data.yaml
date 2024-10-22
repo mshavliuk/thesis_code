@@ -1,0 +1,13 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model on a bit better data"
+data_config:
+  train:
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/train
+
+  val:
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/val
+
+  test:
+    path: /home/user/.cache/thesis/data/original_strats_data_shifted/test

@@ -1,0 +1,8 @@
+%TAG !include! ./pretrain-base.yaml
+---
+
+
+description: "Pretrain the model with unnormalized time"
+
+common_dataset:
+  normalize_time: false

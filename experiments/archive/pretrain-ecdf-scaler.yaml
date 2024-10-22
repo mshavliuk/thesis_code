@@ -1,0 +1,8 @@
+%TAG !include! ./pretrain-base.yaml
+---
+
+
+description: "Pretrain the model with ECDF scaler and no activation function"
+
+common_dataset:
+  scaler_class: 'VariableECDFScaler'

@@ -1,0 +1,16 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune with forecast dropout"
+
+checkpoint: pretrain-ecdf-sigmoid:best
+
+common_dataset:
+  scaler_class: 'VariableECDFScaler'
+
+module_config:
+  model:
+    head_layers:
+      - 'forecast_fc'
+      - 'dropout'
+      - 'binary_fc'

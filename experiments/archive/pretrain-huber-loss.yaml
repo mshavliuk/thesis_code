@@ -1,0 +1,7 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Use Huber loss for pretraining"
+
+module_config:
+  loss: HuberLoss

@@ -1,0 +1,20 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune with higher weight decay provided to the optimizer"
+
+module_config:
+  disable_bias_norm_decay: false
+
+  optimizer:
+#    weight_decay: 0.00
+    eps: 1.0e-4 # larger eps due to bf16 training
+    lr: 5.0e-5
+    amsgrad: true
+
+trainer:
+  max_epochs: 200
+
+early_stop_callback:
+  patience: 20
+

@@ -1,0 +1,6 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune the original model speedup with flash attention"
+
+checkpoint: pretrain-ours:best

@@ -1,0 +1,82 @@
+description: &description null # to be overriden
+stage: &stage "finetune"
+
+metric: &metric val_pr_roc_auc_sum
+metric_mode: &metric_mode max
+
+wandb_logger:
+  project: Strats
+  job_type: *stage
+  notes: *description
+
+checkpoint: pretrain-ours:best
+
+common_dataset: &common_dataset
+  max_events: 880
+  balanced: false
+  max_minute: 1440 # 24 * 60
+  min_input_minutes: 720 # 12*60
+  repeat_times: 1
+  prediction_gap: 0
+  scaler_class: 'VariableStandardScaler'
+  random_window: false
+  min_number_of_events: 0
+  select_top: 128
+
+module_config:
+  weighted_loss: true
+  model_name: StratsOurs
+  disable_bias_norm_decay: true
+
+  optimizer:
+    lr: 5.0e-5
+    fused: true
+
+  model:
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 8
+    dropout: 0.2
+    attention_dropout: 0.2
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'
+
+data_config:
+  bootstrap: false
+  collator: 'Collator'
+
+  train:
+    batch_size: 16
+    path: /home/user/.cache/thesis/data/original_strats_data/train
+    variables_dropout: 0.2
+    <<: *common_dataset
+
+  val:
+    batch_size: 112
+    path: /home/user/.cache/thesis/data/original_strats_data/val
+    variables_dropout: 0
+    <<: *common_dataset
+
+  test:
+    batch_size: 112
+    path: /home/user/.cache/thesis/data/original_strats_data/test
+    variables_dropout: 0
+    <<: *common_dataset
+
+trainer:
+  max_epochs: 100
+  precision: bf16-mixed
+
+
+checkpoint_callback:
+  monitor: *metric
+  mode: *metric_mode
+  save_top_k: 1
+  save_weights_only: true
+  dirpath: /home/user/.cache/thesis/checkpoints/finetune
+
+early_stop_callback:
+  monitor: *metric
+  mode: *metric_mode
+  patience: 7

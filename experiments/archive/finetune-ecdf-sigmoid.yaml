@@ -1,0 +1,17 @@
+%TAG !include! ./base_config.yaml
+---
+description: "Finetune the model with ECDF scaler with same architecture as the original model (no sigmoid)"
+
+
+checkpoint: pretrain-ecdf-sigmoid:best
+
+#common_dataset: # has no effect since scalers are taken from the checkpoint
+#  scaler_class: 'VariableECDFScaler'
+
+
+module_config:
+  model:
+    head_layers:
+      - 'forecast_fc'
+      - 'sigmoid'
+      - 'binary_fc'

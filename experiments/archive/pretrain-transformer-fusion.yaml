@@ -1,0 +1,12 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Fuse demographic data with variables in the FusionAttention module"
+
+module_config:
+  model_name: Strats_transformer_fusion
+
+  model:
+    attention_dropout: 0.0 # make pretraining faster and still fine?
+  optimizer:
+    lr: 4.0e-4

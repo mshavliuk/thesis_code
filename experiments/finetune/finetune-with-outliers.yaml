@@ -1,0 +1,28 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "TEST"
+
+# Verdict: best on 0.1, worst on 0.5
+
+checkpoint: pretrain-with-outliers:best
+
+trainer:
+  gradient_clip_val: 0.3
+
+module_config:
+  model:
+    attention_dropout: 0.2
+
+  optimizer:
+    fused: false # Fused optimizer does not support gradient clipping
+
+data_config:
+  train:
+    path: /home/user/.cache/thesis/data/data_with_outliers/train
+
+  val:
+    path: /home/user/.cache/thesis/data/data_with_outliers/val
+
+  test:
+    path: /home/user/.cache/thesis/data/data_with_outliers/test

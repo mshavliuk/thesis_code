@@ -1,8 +1,11 @@
 import argparse
+import hashlib
 import itertools
 import logging
 import os
 import pickle
+import sys
+import time
 from functools import (
     reduce,
 )
@@ -11,6 +14,7 @@ from typing import TypedDict
 import pandas as pd
 from pyspark.sql import (
     DataFrame,
+    Window,
     functions as F,
 )
 from pyspark.sql.functions import udf
@@ -30,16 +34,21 @@ from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.spark import get_spark
 
+
 class Splits[T](TypedDict):
     train: T
     val: T
     test: T
 
+# FIXME: use sorted
+args_hash = hashlib.md5(str(sys.argv).encode()).hexdigest()
+
+
 class DataProcessingJob:
     def __init__(self, data_extractor: DataExtractor, output_path: str):
         self.data_extractor = data_extractor
+        logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-        
         self.outputs = {
             'train_mortality_labels': f'{output_path}/train/mortality_labels.parquet',
             'test_mortality_labels': f'{output_path}/test/mortality_labels.parquet',
@@ -66,19 +75,22 @@ class DataProcessingJob:
         StructField('value', FloatType(), False),
     ])))
     def distribute_value_in_time_udf(amount, time, num_hours):
-        # FIXME: num_hours could be negative sometimes
+        if num_hours < 0:
+            return
+        
         if num_hours <= 1:
             yield time, amount
             return
         
         hour_amount = amount / num_hours
-        for i in range(int(num_hours)):
+        for i in range(int(num_hours) - 1):  # leave the last hour for the remainder
             yield time - pd.Timedelta(hours=num_hours - i - 1), hour_amount
         
-        if (num_hours % 1) > 0:
-            # FIXME: `num_hours % 1` sometimes produces tiny fractions of amounts and creates extra
-            #  23560 residual entries. Instead, if num_hours % 1 < 1/60 it's better to split the amount
-            #  into num_hours equal parts
+        if (
+            num_hours % 1) < 5 / 60:  # less than 5 min, return the last hour together with the remainder
+            yield time, hour_amount * (num_hours % 1 + 1)
+        else:  # more than 5 minutes, return the last hour and the remainder separately
+            yield time, hour_amount
             yield time, hour_amount * (num_hours % 1)
     
     def distribute_events_hourly(self, events) -> DataFrame:
@@ -116,7 +128,7 @@ class DataProcessingJob:
             .when(F.col('unit') == 'L', 'ml')
             .otherwise(F.col('unit'))))
     
-    @cache_result(f'raw_events', partitionBy='code')
+    @cache_result(f"raw_events_{args_hash}", partitionBy='code')
     def get_raw_events(self, features) -> DataFrame:
         chartevents = (self.data_extractor.read_chartevents()
                        .withColumn('source', F.lit('chartevents')))
@@ -176,7 +188,7 @@ class DataProcessingJob:
         )
         return feature_events
     
-    @cache_result('feature_events', partitionBy='variable')
+    @cache_result(f'feature_events_{args_hash}', partitionBy='variable')
     def process_event_values(self, events: DataFrame, features) -> DataFrame:
         events = events.repartition('code')
         feature_events = (
@@ -187,7 +199,7 @@ class DataProcessingJob:
         feature_events = self.add_variable_name_col(feature_events, features)
         return feature_events
     
-    @cache_result('sanitized_events', partitionBy='variable')
+    @cache_result(f'sanitized_events_{args_hash}', partitionBy='variable')
     def process_outliers(self, events: DataFrame, features) -> DataFrame:
         filter_configs = {}
         medians = []
@@ -233,11 +245,31 @@ class DataProcessingJob:
         events = reduce(DataFrame.unionByName, variables)
         return events
     
+    def add_noise(self, events: DataFrame, args: argparse.Namespace) -> DataFrame:
+        
+        p, magnitude, noise_type = args.noise_p, args.noise_magnitude, args.noise_type
+        assert 0 <= p <= 1, 'p must be in [0, 1]'
+        
+        if noise_type == 'gaussian':
+            return events.withColumn(
+                'value',
+                F.when(F.rand() < p, F.col('value') * (1 + F.randn() * magnitude)).otherwise(F.col(
+                    'value'))
+            )
+        elif noise_type == 'uniform':
+            window_spec = Window.partitionBy('variable')
+            return events.withColumn('min', F.min('value').over(window_spec)) \
+                .withColumn('max', F.max('value').over(window_spec)) \
+                .withColumn(
+                'value',
+                F.when(F.rand() < p, F.rand() * (F.col('max') - F.col('min')) + F.col('min'))
+                .otherwise(F.col('value'))
+            ).drop('min', 'max')
+    
     def get_demographics(self, icu_stays) -> DataFrame:
         ages = self.extract_ages(icu_stays)
         patients = self.data_extractor.read_patients()
         genders = self.extract_gender_events(icu_stays, patients)
-        # TODO: add ethnicity
         
         return ages.join(genders, on='stay_id', how='outer')
     
@@ -251,33 +283,33 @@ class DataProcessingJob:
     def add_stay_id_col(self, events: DataFrame, icu_stays: DataFrame):
         if 'stay_id' in events.columns:
             raise ValueError('stay_id column already exists in events DataFrame')
-        
+        an_hour = F.expr('INTERVAL 1 HOUR')
         with_computed_icu = (
             events.alias('event')
             # inner join => all events have icu stay or filtered out
             .join(icu_stays, on='admission_id', how='inner')
-            # FIXME: better to increase the time range by a few hours from both sides
-            .filter(F.col('time').between(F.col('time_start'), F.col('time_end')))
+            .filter(F.col('time').between(F.col('time_start') - an_hour,
+                                          F.col('time_end') + an_hour))
             .select('event.*', 'stay_id'))
         return with_computed_icu
     
     def filter_icu_stays(self, events: DataFrame, icu_stays: DataFrame):
-        # TODO: select stays where count is at least 100
-        return events.groupBy('stay_id').count() \
-            .filter(F.col('count') > 1) \
-            .select('stay_id') \
-            .join(icu_stays, on='stay_id', how='inner')
+        return icu_stays.join(
+            events.groupBy('stay_id').count().filter(F.col('count') > 1),
+            on='stay_id',
+            how='semi',
+        )
     
     def use_relative_icu_time(self, events: DataFrame, icu_stays: DataFrame):
-        # TODO: shift so 0 is smallest time in stay (avoid negative minutes)
+        min_time_per_stay = events.groupBy('stay_id').agg(F.min('time').alias('min_time'))
+        with_min_time = events.join(min_time_per_stay, on='stay_id', how='inner')
         with_rel_time = (
-            events.alias('event')
-            .join(icu_stays, on='stay_id', how='inner')
+            with_min_time
+            .join(icu_stays, on='stay_id', how='semi')
             .withColumn('minute', F.round(
-                (F.col('time') - F.col('time_start')).cast('int') / 60
+                (F.col('time') - F.col('min_time')).cast('int') / 60
             ).cast('int'))
-            .drop('time')
-            .select('event.*', 'minute'))
+            .drop('time', 'min_time'))
         return with_rel_time
     
     def get_icu_alive_for_24h(self, icu_stays: DataFrame, events: DataFrame, admissions: DataFrame):
@@ -301,7 +333,7 @@ class DataProcessingJob:
             .filter(F.col('minute') < 24 * 60)
             .select('stay_id')
             .distinct())
-        icu_24_plus = icu_24_plus.join(stay_ids_with_events, on='stay_id', how='inner')
+        icu_24_plus = icu_24_plus.join(stay_ids_with_events, on='stay_id', how='semi')
         return icu_24_plus
     
     def extract_ages(self, icu_stays) -> DataFrame:
@@ -318,27 +350,39 @@ class DataProcessingJob:
         )
         return gender_events
     
-    def run(self, seed: int, strats_splits_path) -> DataFrame:
+    def run(self, args: argparse.Namespace) -> DataFrame:
         features = get_features()
         self.logger.info(f'Reading data')
         raw_events = self.get_raw_events(features)
         self.logger.info('Selecting variables')
         feature_events = self.process_event_values(raw_events, features)
-        self.logger.info('Processing outliers')
-        sanitized_events = self.process_outliers(feature_events, features)
+        if args.leave_outliers:
+            self.logger.info('Leaving outliers in the dataset')
+            sanitized_events = feature_events
+        else:
+            self.logger.info('Processing outliers')
+            self.logger.info('Events before processing outliers: %d', feature_events.count())
+            sanitized_events = self.process_outliers(feature_events, features)
+            self.logger.info('Events after processing outliers: %d', sanitized_events.count())
+        
+        if args.noise_p > 0:
+            self.logger.info('Adding noise')
+            sanitized_events = self.add_noise(sanitized_events, args)
+        
         # filter ICU stays so we don't generate useless gender and age events
         icu_stays = self.data_extractor.read_icustays()
-        admissions = self.data_extractor.read_admissions()
+        icu_stays = self.filter_icu_stays(sanitized_events, icu_stays)
         icu_events = self.use_relative_icu_time(sanitized_events, icu_stays)
         
         # Saving data for supervised task
+        admissions = self.data_extractor.read_admissions()
         icu_stays_24h = self.get_icu_alive_for_24h(icu_stays, icu_events, admissions)
         
-        if strats_splits_path is not None:
-            split_stay_ids = self.split_stays_by_strats(strats_splits_path)
+        if args.split_by_strats is not None:
+            split_stay_ids = self.split_stays_by_strats(args.split_by_strats)
         else:
-            split_fractions: Splits[float] = {'train': .64, 'test': .2, 'val': .16 }
-            split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions, seed)
+            split_fractions: Splits[float] = {'train': .64, 'test': .2, 'val': .16}
+            split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions, args.seed)
         self.save_label_splits(icu_stays_24h, split_stay_ids)
         
         all_events = self.throttle_events(icu_events)
@@ -369,12 +413,12 @@ class DataProcessingJob:
     
     def save_demographic_splits(self, demographics: DataFrame, splits: Splits[DataFrame]):
         for name, df in splits.items():
-            demographics.join(df, on='stay_id', how='inner').toPandas().to_parquet(
+            demographics.join(df, on='stay_id', how='semi').toPandas().to_parquet(
                 self.outputs[f'{name}_demographics'])
     
     def save_event_splits(self, events: DataFrame, splits: Splits[DataFrame]):
         for name, df in splits.items():
-            events.join(df, on='stay_id', how='inner').repartition(1).write.parquet(
+            events.join(df, on='stay_id', how='semi').repartition(1).write.parquet(
                 self.outputs[f'{name}_events'], mode='overwrite')
     
     def split_stays_by_strats(self, split_path) -> Splits[DataFrame]:
@@ -405,7 +449,7 @@ class DataProcessingJob:
             result[key] = split
         return result
     
-    @cache_result('all_events')
+    @cache_result(f'all_events_{args_hash}')
     def throttle_events(self, events) -> DataFrame:
         events = events.groupBy('stay_id', 'minute', 'variable').agg(
             F.mean('value').alias('value'),
@@ -428,14 +472,34 @@ class DataProcessingJob:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    time_start = time.time()
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--output-path', type=str, required=True, help='Path to output directory')
+    parser.add_argument('--leave-outliers',
+                        action='store_true',
+                        help='Leave outliers in the dataset')
+    parser.add_argument('--noise-p', type=float, default=0.0, help='Probability of adding noise')
+    parser.add_argument('--noise-magnitude',
+                        type=float,
+                        default=0.1,
+                        help='Proportional magnitude of noise')
+    parser.add_argument('--noise-type', type=str, default='gaussian', help='Type of noise')
+    
     parser.add_argument('--split-by-strats', type=str, help='Path to strats splits')
     args = parser.parse_args()
-    
     spark = get_spark("Preprocessing MIMIC-III dataset")
     data_extractor = DataExtractor(spark)
+    
+    if args.noise_p > 0:
+        if args.noise_type == 'uniform':
+            args.output_path += f'_{args.noise_type}_p{args.noise_p}'
+        elif args.noise_type == 'gaussian':
+            args.output_path += f'_{args.noise_type}_p{args.noise_p}_m{args.noise_magnitude}'
+        
+    
     job = DataProcessingJob(data_extractor, args.output_path)
-    job.run(args.seed, args.split_by_strats)
+    job.run(args)
     # job.generate_unittest_dataset()
+    time_taken = time.time() - time_start
+    print(f'Finished in {time_taken:.2f} seconds')
     spark.stop()

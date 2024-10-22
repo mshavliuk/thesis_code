@@ -1,0 +1,15 @@
+0:
+  params:
+  - '^model.head.binary_fc.*$'
+  max_transition_epoch: 20
+1:
+  params:
+  - '^(?!model\.head\.binary_fc).*$' # all except binary_fc
+  lr: &lr 5.0e-5
+  new_lr_scheduler:
+    lr_scheduler_init:
+      class_path: torch.optim.lr_scheduler.ConstantLR
+      init_args:
+        factor: 1
+        total_iters: -1
+    init_pg_lrs: [*lr, *lr]

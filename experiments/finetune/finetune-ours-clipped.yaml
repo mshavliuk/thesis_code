@@ -1,0 +1,14 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune our model with gradient clipping"
+
+checkpoint: pretrain-ours:best
+
+module_config:
+  optimizer:
+    fused: false # Fused optimizer does not support clipping
+
+
+trainer:
+  gradient_clip_val: 0.3

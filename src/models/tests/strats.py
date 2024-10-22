@@ -3,9 +3,8 @@ import time
 import pytest
 import torch.cuda
 
-from src.models.strats import (
-    Strats,
-    StratsConfig,
+from src.models.strats_original import (
+    StratsOriginal,
 )
 from src.util.collator import Collator
 from src.util.data_loader import (
@@ -46,7 +45,7 @@ class TestStrats:
     
     @pytest.fixture()
     def model(self, config, device):
-        model = Strats(config)
+        model = StratsOriginal(config)
         return model.to(device)
     
     @pytest.fixture(scope='function')
@@ -66,7 +65,7 @@ class TestStrats:
     
     @pytest.mark.parametrize('config', HEAD_CONFIGS.values(), indirect=True, ids=HEAD_CONFIGS.keys())
     @pytest.mark.parametrize('device', ['cpu', 'cuda'], indirect=True)
-    def test_forward_backward(self, model: Strats, batch: Batch):
+    def test_forward_backward(self, model: StratsOriginal, batch: Batch):
         output = model(**batch.model_inputs)
         assert output is not None
         # todo: change loss for binary head
@@ -77,7 +76,7 @@ class TestStrats:
     
     # @pytest.mark.parametrize('config', HEAD_CONFIGS.values(), indirect=True, ids=HEAD_CONFIGS.keys())
     @pytest.mark.parametrize('device', ['cpu', 'cuda'], indirect=True)
-    def test_compile(self, model: Strats, batch: Batch, device):
+    def test_compile(self, model: StratsOriginal, batch: Batch, device):
         # TODO: torch.jit.script(model)
         
         model = model.to(device)
@@ -90,7 +89,7 @@ class TestStrats:
         loss.backward()
     
     @pytest.mark.parametrize('config', HEAD_CONFIGS.values(), indirect=True, ids=HEAD_CONFIGS.keys())
-    def test_benchmark_forward(self, model: Strats, data_loader):
+    def test_benchmark_forward(self, model: StratsOriginal, data_loader):
         start_time = time.time()
         device = 'cpu'
         model.to(device)

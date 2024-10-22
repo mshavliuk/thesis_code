@@ -1,0 +1,11 @@
+%TAG !include! ./base_config.yaml
+---
+
+description: "Finetune with infinite patience"
+
+trainer:
+  max_epochs: 200
+  val_check_interval: 0.5
+
+early_stop_callback:
+  patience: 1000

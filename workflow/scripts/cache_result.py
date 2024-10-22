@@ -22,7 +22,11 @@ from workflow.scripts.config import Config
 # from pyspark.testing import assertSchemaEqual
 
 
-def cache_result(cache_key: str = None, cache_dir: str = None, **cache_kwargs):
+def cache_result(
+    cache_key: str | None = None,
+    cache_dir: str = None,
+    **cache_kwargs
+):
     """
     A decorator to persist the DataFrame returned by a function to disk.
 
@@ -35,28 +39,15 @@ def cache_result(cache_key: str = None, cache_dir: str = None, **cache_kwargs):
         if get_type_hints(func).get('return') is not DataFrame:
             raise TypeError(f"The decorated function {func.__name__} must be annotated to return a DataFrame.")
         
-        key = cache_key or func.__name__
-        cache_path = f"{cache_dir}/{key}"
+        if cache_key is None:
+            cache_path = f"{cache_dir}/{func.__name__}"
+        else:
+            cache_path = f"{cache_dir}/{cache_key}"
         
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # args_keys = [] # TODO: hash or pickle and compare to invalidate cache
-            # for arg in args:
-            #     if is_hashable(arg):
-            #         args_keys.append(hash(arg))
-            #     else: # serialize and hash
-            #         args_keys.append(hash(str(arg)))
-            # if args or kwargs:
-            # self.logger.warning(
-            #     f"Arguments passed to {func.__name__} will be ignored when loading from cache."
-            # )
-            
             df = func(*args, **kwargs)
             return cache_df(df, cache_path, **cache_kwargs)
-        
-        wrapper.cache_key = key
-        wrapper.cache_path = cache_path
-        wrapper.cache_file = f"{cache_path}.parquet"
         
         wrapper.get_cached_df = lambda spark: get_cached_df(spark, cache_path)
         
@@ -64,7 +55,12 @@ def cache_result(cache_key: str = None, cache_dir: str = None, **cache_kwargs):
     
     return decorator_cache_as
 
-def get_cached_df(spark: SparkSession, cache_path: str, expected_schema: StructType=None) -> DataFrame:
+
+def get_cached_df(
+    spark: SparkSession,
+    cache_path: str,
+    expected_schema: StructType = None
+) -> DataFrame:
     schema_path = f"{cache_path}-schema.json"
     parquet_path = f"{cache_path}.parquet"
     with open(schema_path, 'rt') as f:
@@ -82,6 +78,7 @@ def get_cached_df(spark: SparkSession, cache_path: str, expected_schema: StructT
                 field.name,
                 F.coalesce(F.col(field.name), placeholder))
     return cached_df
+
 
 def cache_df(df: DataFrame, path: str, **kwargs) -> DataFrame:
     """

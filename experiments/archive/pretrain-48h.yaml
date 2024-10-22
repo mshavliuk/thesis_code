@@ -1,0 +1,21 @@
+%TAG !include! ./pretrain-base.yaml
+---
+
+
+description: "Pretrain the model on 48h data and wider context window"
+
+
+module_config:
+  model_name: strats_speed
+
+  model:
+    attention_dropout: 0
+
+
+common_dataset:
+  max_events: 880
+  max_minute: 2880 # 48 * 60
+  min_input_minutes: 720 # 12*60
+  scaler_class: 'VariableStandardScaler'
+  balanced: false
+  prediction_gap: 60

@@ -1,0 +1,7 @@
+%TAG !include! ./base_config.yaml
+---
+description: "Finetune the model with ECDF scaler with same architecture as the original model (no sigmoid)"
+
+
+checkpoint: pretrain-ecdf-scaler:best
+

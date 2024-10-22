@@ -1,0 +1,7 @@
+%TAG !include! pretrain-base.yaml
+---
+
+description: "Use MAE loss for pretraining"
+
+module_config:
+  loss: L1Loss
