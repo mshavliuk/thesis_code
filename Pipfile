@@ -10,7 +10,6 @@ scipy = "*"
 numba = "*"
 lightning = "*"
 wandb = "*"
-scikit-learn = "*"
 "jsonargparse[signatures]" = "*"
 finetuning-scheduler = "*"
 #flash-attn = "2.5.8" # maximum supported by transformerenigne
