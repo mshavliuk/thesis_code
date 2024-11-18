@@ -7,6 +7,7 @@ import pandas as pd
 from matplotlib import (
     cm,
 )
+from matplotlib.transforms import Bbox
 from pyspark.sql.types import (
     IntegerType,
     StringType,
@@ -103,7 +104,6 @@ def plot_variable_distribution(
     file_name = 'hist_' + re.sub(r"[^a-zA-Z0-9]", "_", variable_name) + ".pdf"
     file_path = f'{plots_dir}/{file_name}'
     try:
-        from workflow.scripts.util import get_fig_box
         fig.savefig(file_path, dpi=300, bbox_inches=get_fig_box(fig))
         fig.show()
     except Exception as e:
@@ -284,7 +284,6 @@ def get_plot_patient_journey(
         file_path = f'{plots_dir}/journey_{stay_id}.pdf'
         
         try:
-            from workflow.scripts.util import get_fig_box
             fig.savefig(file_path, bbox_inches=get_fig_box(fig))
         except Exception as e:
             print(f"Failed to save plot for group {stay_id}: {e}")
@@ -318,3 +317,20 @@ def pickle_args(variables, group_one, group_two):
     with open(file_path, 'wb') as f:
         pickle.dump((variables, group_one, group_two), f)
     return pd.DataFrame(data=[[variable_name, file_path]], columns=['variable', 'file_path'])
+
+
+def get_fig_box(fig):
+    fig.canvas.draw()
+    fig_box = fig.get_tightbbox()
+    
+    margin_px = 1
+    margin_in_inches = margin_px / fig.dpi
+    
+    fig_box_expanded = Bbox.from_bounds(
+        fig_box.x0 - margin_in_inches,
+        fig_box.y0 - margin_in_inches,
+        fig_box.width + 2 * margin_in_inches,
+        fig_box.height + 2 * margin_in_inches
+    )
+    
+    return fig_box_expanded

@@ -3,6 +3,7 @@ from pyspark.sql import functions as F
 
 def get_features():
     # this cannot be usual const because F.col requires active spark context
+    # adopted from https://github.com/sindhura97/STraTS/blob/main/src/preprocess_mimic_iii_large.py
     
     BLOOD_PRESSURE_FILTER = {
         'filtering': {

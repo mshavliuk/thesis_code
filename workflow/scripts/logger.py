@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from typing import Callable
 
@@ -9,6 +8,10 @@ from workflow.scripts.config import Config
 
 
 class CustomLogRecord(logging.LogRecord):
+    """
+    Allows lazy spark dataframe evaluation in log messages.
+    """
+    
     def getMessage(self):
         msg = str(self.msg)
         str_args = []

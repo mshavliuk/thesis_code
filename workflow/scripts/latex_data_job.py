@@ -18,13 +18,13 @@ class LatexDataJob:
         os.makedirs(f'{Config.data_dir}/latex', exist_ok=True)
     
     def run(self):
-        # variables_statistics = pd.read_csv(StatisticsJob.outputs['variables'])
-        # self.process_variables_statistics(variables_statistics)
-        # split_statistics = pd.read_csv(StatisticsJob.outputs['splits_table'])
-        # self.process_split_statistics(split_statistics)
+        variables_statistics = pd.read_csv(StatisticsJob.outputs['variables'])
+        self.process_variables_statistics(variables_statistics)
+        split_statistics = pd.read_csv(StatisticsJob.outputs['splits_table'])
+        self.process_split_statistics(split_statistics)
         self.process_other_statistics()
-        # raw_dataset_statistics = pd.read_csv(StatisticsJob.outputs['raw_dataset'])
-        # self.process_raw_dataset_statistics(raw_dataset_statistics)
+        raw_dataset_statistics = pd.read_csv(StatisticsJob.outputs['raw_dataset'])
+        self.process_raw_dataset_statistics(raw_dataset_statistics)
     
     def process_split_statistics(self, df):
         # snake_case to Sentence case

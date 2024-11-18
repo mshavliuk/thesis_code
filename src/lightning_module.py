@@ -17,7 +17,6 @@ from torchmetrics import MeanMetric
 from torchmetrics.classification import (
     BinaryAUROC,
     BinaryPrecisionRecallCurve,
-
 )
 from torchmetrics.regression import MeanSquaredError
 from torchmetrics.utilities.compute import auc
@@ -115,12 +114,9 @@ class PretrainingModule(AbstractModule):
     ):
         super().__init__(module_config, features_info, logger)
         self.save_hyperparameters(ignore=['logger'], logger=False)
-        self.criterion = getattr(torch.nn, module_config.loss)()
+        self.criterion = torch.nn.MSELoss()
         self.val_loss = MeanSquaredError()
         self.test_loss = MeanSquaredError()
-        # self.train_max_input_time = MeanMetric()
-        # self.train_input_sequence_length = MeanMetric()
-        # self.train_pred_features_number = MeanMetric()
         self.model = self.build_model(module_config, features_info)
     
     def _get_pred_true(self, output, batch):
@@ -133,29 +129,16 @@ class PretrainingModule(AbstractModule):
         return self.criterion(pred, true)
     
     def training_step(self, batch, batch_idx):
-        # self.train_max_input_time.update(batch['times'].max(axis=1).values)
-        # self.train_input_sequence_length.update(batch['input_mask'].sum(axis=1))
-        # self.train_pred_features_number.update(batch['forecast_mask'].sum(axis=1))
         output = self(batch)
         pred, true = self._get_pred_true(output, batch)
         loss = self.loss(pred, true)
-        # self.train_loss.update(pred, true)
-        # self.log("train_loss", loss, on_step=True, on_epoch=False)
         return loss
-    
-    # def on_train_epoch_end(self) -> None:
-    #     self.log("train_epoch_loss", self.train_loss)
-    #     self.log("train_epoch_max_input_time", self.train_max_input_time)
-    #     self.log("train_epoch_input_sequence_length", self.train_input_sequence_length)
-    #     self.log("train_epoch_pred_features_number", self.train_pred_features_number)
     
     def validation_step(self, batch, batch_idx):
         output = self(batch)
         pred, true = self._get_pred_true(output, batch)
         loss = self.loss(pred, true)
         self.val_loss.update(pred, true)
-        # for some reason, by default, it is on_step=False, on_epoch=True
-        # self.log("val_loss", loss, on_step=True, on_epoch=False)
         return loss
     
     def test_step(self, batch, batch_idx):
@@ -165,7 +148,6 @@ class PretrainingModule(AbstractModule):
     
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         output = self(batch)
-        # pred, true = self._get_pred_true(output, batch)
         return output, batch['forecast_values'], batch['forecast_mask']
     
     def on_test_epoch_end(self) -> None:
@@ -188,8 +170,6 @@ class FinetuneModule(AbstractModule):
         self.criterion = torch.nn.BCEWithLogitsLoss(weight=torch.tensor(1, dtype=torch.float32))
         self.auroc = BinaryAUROC()
         self.precision_recall_curve = BinaryPrecisionRecallCurve()
-        # keep different metrics separately because validation interval could be less than one epoch
-        # self.train_epoch_loss = MeanMetric()
         self.val_epoch_loss = MeanMetric()
         self.test_epoch_loss = MeanMetric()
         self.reported_logs = set()

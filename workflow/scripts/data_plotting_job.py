@@ -30,13 +30,13 @@ from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
 from workflow.scripts.logger import get_logger
 from workflow.scripts.plotting_functions import (
+    get_fig_box,
     get_plot_patient_journey,
     get_plot_variables_distribution,
     plot_variable_distribution,
 )
 from workflow.scripts.spark import get_spark
 from workflow.scripts.statistics_job import StatisticsJob
-from workflow.scripts.util import get_fig_box
 
 
 class DataPlottingJob:
@@ -64,13 +64,13 @@ class DataPlottingJob:
         return reduce(DataFrame.unionByName, all_events)
     
     def run(self):
-        # events = self.data_processing_job.process_outliers.get_cached_df(self.spark)
-        # self.plot_correlation_matrix(events)
-        # self.plot_data_ecdf(events, ['FiO2', 'Albumin 5%'])
+        events = self.data_processing_job.process_outliers.get_cached_df(self.spark)
+        self.plot_correlation_matrix(events)
+        self.plot_data_ecdf(events, ['FiO2', 'Albumin 5%'])
         variables_statistics = pd.read_csv(StatisticsJob.outputs['variables'])
-        # events = self.get_all_events()
-        # self.plot_patient_journeys(events, variables_statistics)
-        # feature_events = DataProcessingJob.process_event_values.get_cached_df(self.spark)
+        events = self.get_all_events()
+        self.plot_patient_journeys(events, variables_statistics)
+        feature_events = DataProcessingJob.process_event_values.get_cached_df(self.spark)
         feature_events = self.get_all_events()
         percentiles = (0.01, 0.99)
         variables_statistics = (

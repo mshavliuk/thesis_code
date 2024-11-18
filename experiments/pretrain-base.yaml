@@ -7,7 +7,6 @@ __metric_mode__: &metric_mode min
 
 module_config:
   class_name: StratsOurs
-  loss: MSELoss
   disable_bias_norm_decay: true
 
   model:

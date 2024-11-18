@@ -22,7 +22,7 @@ from src.util.wandb import (
     find_checkpoint,
     get_run_checkpoint,
 )
-from workflow.scripts.util import get_fig_box
+from workflow.scripts.plotting_functions import get_fig_box
 
 
 def plot_risk_score_distributions(config, run: wandb.apis.public.Run, ax: list[plt.Axes]):

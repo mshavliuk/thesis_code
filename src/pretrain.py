@@ -60,7 +60,6 @@ def pretrain(args: argparse.Namespace, config: PretrainConfig, logger: logging.L
         try:
             wandb_logger = create_wandb_logger(
                 args, config, [data_artifact] if data_artifact is not None else None,
-                # args, config, [],
                 config_extra={
                     'data_fraction': 1.0  # allows grouping by data_fraction in wandb dashboard
                 })

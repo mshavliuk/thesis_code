@@ -9,7 +9,7 @@ from math import ceil
 
 from src.util.data_module import *  # FIXME: remove
 from workflow.scripts.config import Config
-from workflow.scripts.util import get_fig_box
+from workflow.scripts.plotting_functions import get_fig_box
 
 
 #  TODO: either rename or move table generation to a separate script (latex job?)
@@ -29,7 +29,7 @@ class ResultsPlottingJob:
     
     NOISE_EXPERIMENTS = {
         "ours": "Z-score",
-        "ecdf-clip-no-sigmoid": "ECDF",
+        "ecdf": "ECDF",
         "ours-noise-4": "Z-score 25% Unif",
         "ours-noise-5": "Z-score 50% Unif",
         "ours-noise-8": r"Z-score $2\sigma$ Gauss",
@@ -37,13 +37,13 @@ class ResultsPlottingJob:
         "ours-noise-10": r"Z-score $3\sigma$ Gauss",
         "ours-noise-11": r"Z-score $1\sigma$ Gauss",
         "ours-noise-12": r"Z-score 100% Unif",
-        "ecdf-clip-no-sigmoid-noise-4": "ECDF 25% Unif",
-        "ecdf-clip-no-sigmoid-noise-5": r"ECDF 50% Unif",
-        "ecdf-clip-no-sigmoid-noise-8": r"ECDF $2\sigma$ Gauss",
-        "ecdf-clip-no-sigmoid-noise-9": "ECDF 75% Unif",
-        "ecdf-clip-no-sigmoid-noise-10": r"ECDF $3\sigma$ Gauss",
-        "ecdf-clip-no-sigmoid-noise-11": r"ECDF $1\sigma$ Gauss",
-        "ecdf-clip-no-sigmoid-noise-12": r"ECDF 100% Unif",
+        "ecdf-noise-4": "ECDF 25% Unif",
+        "ecdf-noise-5": r"ECDF 50% Unif",
+        "ecdf-noise-8": r"ECDF $2\sigma$ Gauss",
+        "ecdf-noise-9": "ECDF 75% Unif",
+        "ecdf-noise-10": r"ECDF $3\sigma$ Gauss",
+        "ecdf-noise-11": r"ECDF $1\sigma$ Gauss",
+        "ecdf-noise-12": r"ECDF 100% Unif",
     }
     
     IMBALANCED_CLASSES_EXPERIMENTS = {
@@ -163,10 +163,10 @@ class ResultsPlottingJob:
         
         full_noise_exps = {
             self.NOISE_EXPERIMENTS[k] for k in
-            ['ours-noise-12', 'ecdf-clip-no-sigmoid-noise-12']}
+            ['ours-noise-12', 'ecdf-noise-12']}
         no_noise_exps = {
             self.NOISE_EXPERIMENTS[k] for k in
-            ['ours', 'ecdf-clip-no-sigmoid']}
+            ['ours', 'ecdf']}
         are_baselines = (results['name'].isin(no_noise_exps)
                          | results['name'].isin(full_noise_exps))
         
@@ -321,9 +321,7 @@ class ResultsPlottingJob:
         
         finetune_experiments = {
             'ours': baseline,
-            # 'ecdf': 'ECDF old (no clip, sigmoid)',
-            # 'ecdf-no-sigmoid': 'ECDF no sigmoid',
-            'ecdf-clip-no-sigmoid': 'ECDF',
+            'ecdf': 'ECDF',
         }
         finetune_runs_df = self._get_runs_summary(
             wandb_api,
