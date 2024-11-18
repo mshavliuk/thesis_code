@@ -147,7 +147,7 @@ class TimeScaler:
         self.half_max_minute = np.float64(max_minute / 2)
     
     def transform(self, minutes: np.ndarray):
-        return (minutes - (minutes[0] + self.half_max_minute)) / self.half_max_minute
+        return (minutes - (minutes.min() + self.half_max_minute)) / self.half_max_minute
     
     def __eq__(self, other):
         return isinstance(other, TimeScaler) and np.isclose(self.half_max_minute,

@@ -6,10 +6,10 @@ description: "Pretrain the model with ECDF scaler and sigmoid activation functio
 
 data_config:
   train:
-    path: /home/user/.cache/thesis/data/data_with_outliers/train
+    path: data_with_outliers/train
 
   val:
-    path: /home/user/.cache/thesis/data/data_with_outliers/val
+    path: data_with_outliers/val
 
   test:
-    path: /home/user/.cache/thesis/data/data_with_outliers/test
+    path: data_with_outliers/test

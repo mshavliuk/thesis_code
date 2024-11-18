@@ -1,0 +1,12 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf.yaml
+---
+
+description: "Ablation study: no demographics embedding"
+
+
+
+module_config:
+  model:
+    ablate:
+      - 'demo'

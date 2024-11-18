@@ -1,0 +1,9 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf-noise-11.yaml
+---
+
+description: "Finetune model with ECDF scaler and with gaussian noise with magnitude 1.0 std added to all values"
+
+
+module_checkpoint: ecdf-noise-11_pretrain:best
+

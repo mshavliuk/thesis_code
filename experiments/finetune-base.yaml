@@ -1,0 +1,64 @@
+description: null # to be defined
+
+stage: "finetune"
+
+__metric__: &metric val_pr_roc_auc_sum
+__metric_mode__: &metric_mode max
+
+module_config:
+  weighted_loss: true
+  class_name: StratsOurs
+  disable_bias_norm_decay: true
+
+  optimizer:
+    lr: 5.0e-5
+    fused: false
+
+  model:
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 8
+    dropout: 0.2
+    attention_dropout: 0.2
+    head_layers: null # to be defined
+
+
+
+
+__common_loader__: &common_loader
+  balanced: false
+  repeat_times: 1
+
+
+data_config:
+  train:
+    loader:
+      <<: *common_loader
+      batch_size: 16
+
+  val:
+    loader:
+      <<: *common_loader
+      batch_size: 112
+
+  test:
+    loader:
+      <<: *common_loader
+      batch_size: 112
+
+trainer:
+  gradient_clip_val: 0.3
+
+
+wandb_logger: {}
+
+checkpoint_callback:
+  monitor: *metric
+  mode: *metric_mode
+  save_top_k: 1
+
+
+early_stop_callback:
+  monitor: *metric
+  mode: *metric_mode
+  patience: 10

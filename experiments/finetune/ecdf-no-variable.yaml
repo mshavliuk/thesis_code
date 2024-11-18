@@ -1,0 +1,11 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf.yaml
+---
+
+description: "Ablation study: no variable embedding"
+
+
+module_config:
+  model:
+    ablate:
+      - 'ts'

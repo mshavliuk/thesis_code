@@ -18,8 +18,8 @@ output_file = pathlib.Path(args.output_file_path)
 
 spark = SparkSession.builder \
     .appName(f"Converting {input_file} to {output_file}") \
-    .config("spark.executor.cores", "1") \
-    .config("spark.executor.instances", "8") \
+    .config("spark.executor.cores", "2") \
+    .config("spark.executor.instances", "1") \
     .config("spark.driver.memory", "2g") \
     .config("spark.executor.memory", "2g") \
     .config("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED") \

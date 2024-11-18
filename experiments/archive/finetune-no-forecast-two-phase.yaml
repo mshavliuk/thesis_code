@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 
 description: "Finetune the original model with no forecast head and two-pase schedule"

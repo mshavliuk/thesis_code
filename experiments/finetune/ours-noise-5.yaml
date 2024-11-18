@@ -1,0 +1,5 @@
+%TAG !include! ./ours.yaml
+%TAG !depends-on! ../pretrain/ours-noise-5.yaml
+---
+
+description: "Finetune our base model with 50% of values replaced by uniformly-distributed noise"

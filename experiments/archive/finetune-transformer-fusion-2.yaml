@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 
 description: "all the same but with relu activation in cve and wider hidden dim (equal to hid_dim)"

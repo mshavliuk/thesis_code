@@ -1,0 +1,12 @@
+%TAG !include! ./ours.yaml
+%TAG !depends-on! ../pretrain/ours-noise-12.yaml
+---
+
+description: "Finetune our base model with 100% of values replaced by uniformly-distributed noise"
+
+
+trainer:
+  min_epochs: 100
+
+early_stop_callback:
+  patience: 20

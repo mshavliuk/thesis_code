@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.util.config_namespace import read_config
+from src.util.config import read_config
 from src.util.data_module import MIMICIIIDataModule
 
 parser = argparse.ArgumentParser()

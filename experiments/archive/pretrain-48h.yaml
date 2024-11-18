@@ -18,4 +18,3 @@ common_dataset:
   min_input_minutes: 720 # 12*60
   scaler_class: 'VariableStandardScaler'
   balanced: false
-  prediction_gap: 60

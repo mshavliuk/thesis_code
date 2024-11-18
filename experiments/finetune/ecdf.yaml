@@ -1,0 +1,13 @@
+%TAG !include! ../finetune-base.yaml
+%TAG !depends-on! ../pretrain/ecdf.yaml
+---
+
+description: "Finetune the model with ECDF scaler"
+
+module_checkpoint: ecdf_pretrain:best
+
+module_config:
+  model:
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'

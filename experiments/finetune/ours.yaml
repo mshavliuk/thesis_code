@@ -1,0 +1,18 @@
+%TAG !include! ../finetune-base.yaml
+%TAG !depends-on! ../pretrain/ours.yaml
+---
+
+description: "Finetune our base model"
+
+trainer:
+  gradient_clip_val: 0.3
+
+module_config:
+  model:
+    attention_dropout: 0.2
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'
+
+  optimizer:
+    fused: false # Fused optimizer does not support gradient clipping

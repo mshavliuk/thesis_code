@@ -46,6 +46,7 @@ def plot_variable_distribution(
     plots_dir: str | None = None,
     bin_edges: np.ndarray | None = None,
     ax: plt.Axes = None,
+    **kwargs,
 ) -> pd.DataFrame | None:
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -61,24 +62,27 @@ def plot_variable_distribution(
         bin_edges = np.histogram_bin_edges(events['value'], bins='auto')
         if len(bin_edges) > bin_lim:
             bin_edges = np.histogram_bin_edges(events['value'], bins=bin_lim)
-    events['code'] = events['code'].fillna(0).astype(int)
+    if 'code' in events:
+        events['code'] = events['code'].fillna(0).astype(int)
     
     if ax is None:
         fig, ax = plt.subplots(figsize=(14, 7))
     else:
         fig = ax.get_figure()
     
-    sns.histplot(
+    sns.kdeplot(
         data=events,
         x='value',
         hue='code',
-        kde=False,
+        # kde=True,
         color='skyblue',
         palette='colorblind',
-        stat='density',
+        fill=True,
+        # stat='density',
         multiple='stack',
-        bins=bin_edges,
+        # bins=bin_edges,
         ax=ax,
+        **kwargs,
     )
     
     code_to_name = variable_data.set_index('code')['variable'].to_dict()

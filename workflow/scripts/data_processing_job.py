@@ -40,8 +40,7 @@ class Splits[T](TypedDict):
     val: T
     test: T
 
-# FIXME: use sorted
-args_hash = hashlib.md5(str(sys.argv).encode()).hexdigest()
+args_hash = hashlib.md5(str(sorted(sys.argv)).encode()).hexdigest()
 
 
 class DataProcessingJob:
@@ -246,16 +245,20 @@ class DataProcessingJob:
         return events
     
     def add_noise(self, events: DataFrame, args: argparse.Namespace) -> DataFrame:
-        
         p, magnitude, noise_type = args.noise_p, args.noise_magnitude, args.noise_type
         assert 0 <= p <= 1, 'p must be in [0, 1]'
         
         if noise_type == 'gaussian':
-            return events.withColumn(
+            std = events.groupBy('variable').agg(F.stddev('value').alias('std'))
+            # return events.withColumn(
+            #     'value',
+            #     F.when(F.rand() < p, F.col('value') * (1 + F.randn() * magnitude)).otherwise(F.col(
+            #         'value'))
+            # )
+            return events.join(std, on='variable', how='inner').withColumn(
                 'value',
-                F.when(F.rand() < p, F.col('value') * (1 + F.randn() * magnitude)).otherwise(F.col(
-                    'value'))
-            )
+                F.when(F.rand() < p, F.col('value') + F.randn() * F.col('std') * magnitude).otherwise(
+                    F.col('value')))
         elif noise_type == 'uniform':
             window_spec = Window.partitionBy('variable')
             return events.withColumn('min', F.min('value').over(window_spec)) \
@@ -265,6 +268,17 @@ class DataProcessingJob:
                 F.when(F.rand() < p, F.rand() * (F.col('max') - F.col('min')) + F.col('min'))
                 .otherwise(F.col('value'))
             ).drop('min', 'max')
+        elif noise_type == 'shuffle':
+            # randomly change variable type to another
+            variables = events.select('variable').distinct().rdd.flatMap(lambda x: x).collect()
+            shuffled = events.withColumn(
+                'variable',
+                F.when(F.rand() < p, F.array([F.lit(v) for v in variables]).getItem(
+                    (F.rand() * len(variables)).cast('int')
+                ))
+                .otherwise(F.col('variable'))
+            )
+            return shuffled
     
     def get_demographics(self, icu_stays) -> DataFrame:
         ages = self.extract_ages(icu_stays)
@@ -379,7 +393,7 @@ class DataProcessingJob:
         icu_stays_24h = self.get_icu_alive_for_24h(icu_stays, icu_events, admissions)
         
         if args.split_by_strats is not None:
-            split_stay_ids = self.split_stays_by_strats(args.split_by_strats)
+            split_stay_ids = self.split_stays_by_strats()
         else:
             split_fractions: Splits[float] = {'train': .64, 'test': .2, 'val': .16}
             split_stay_ids = self.split_stays_by_patient(icu_stays_24h, split_fractions, args.seed)
@@ -407,7 +421,7 @@ class DataProcessingJob:
     
     def save_label_splits(self, labels, splits: Splits[DataFrame]):
         for name, df in splits.items():
-            labels.join(df, on='stay_id', how='inner') \
+            labels.join(df, on='stay_id', how='semi') \
                 .select('stay_id', 'died') \
                 .toPandas().to_parquet(self.outputs[f'{name}_mortality_labels'])
     
@@ -421,8 +435,9 @@ class DataProcessingJob:
             events.join(df, on='stay_id', how='semi').repartition(1).write.parquet(
                 self.outputs[f'{name}_events'], mode='overwrite')
     
-    def split_stays_by_strats(self, split_path) -> Splits[DataFrame]:
-        data, oc, train_ids, val_ids, test_ids = pickle.load(open(split_path, 'rb'))
+    def split_stays_by_strats(self) -> Splits[DataFrame]:
+        with open('./strats_splits.pkl', 'rb') as f:
+            train_ids, val_ids, test_ids = pickle.load(f)
         
         return {
             'train': self.data_extractor.spark.createDataFrame(train_ids, schema=['stay_id']),
@@ -445,7 +460,7 @@ class DataProcessingJob:
         result = {}
         # convert patients to stays
         for key, df in zip(fractions.keys(), patient_id_splits):
-            split = icu_stays_24h.join(df, on='patient_id', how='inner').select('stay_id').cache()
+            split = icu_stays_24h.join(df, on='patient_id', how='semi').select('stay_id').cache()
             result[key] = split
         return result
     
@@ -485,17 +500,10 @@ if __name__ == '__main__':
                         help='Proportional magnitude of noise')
     parser.add_argument('--noise-type', type=str, default='gaussian', help='Type of noise')
     
-    parser.add_argument('--split-by-strats', type=str, help='Path to strats splits')
+    parser.add_argument('--split-by-strats',  action='store_true', help='Using same splits as in original paper')
     args = parser.parse_args()
     spark = get_spark("Preprocessing MIMIC-III dataset")
     data_extractor = DataExtractor(spark)
-    
-    if args.noise_p > 0:
-        if args.noise_type == 'uniform':
-            args.output_path += f'_{args.noise_type}_p{args.noise_p}'
-        elif args.noise_type == 'gaussian':
-            args.output_path += f'_{args.noise_type}_p{args.noise_p}_m{args.noise_magnitude}'
-        
     
     job = DataProcessingJob(data_extractor, args.output_path)
     job.run(args)

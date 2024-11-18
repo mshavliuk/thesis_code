@@ -1,0 +1,8 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf-noise-8.yaml
+---
+
+description: "Finetune model with ECDF scaler and with magnitude 2.0 std added to all values"
+
+module_checkpoint: ecdf-noise-8_pretrain:best
+

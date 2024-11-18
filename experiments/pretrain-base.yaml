@@ -1,0 +1,73 @@
+description: null # to be overriden
+stage: "pretrain"
+
+__metric__: &metric val_epoch_loss
+__metric_mode__: &metric_mode min
+
+
+module_config:
+  class_name: StratsOurs
+  loss: MSELoss
+  disable_bias_norm_decay: true
+
+  model:
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 8
+    dropout: 0.2
+    attention_dropout: 0.2
+    head_layers: null # to be defined
+  optimizer:
+    lr: 5.0e-4
+    fused: false
+
+__common_dataset__: &common_dataset
+  max_events: 880
+  max_minute: 1440 # 24 * 60
+  min_input_minutes: 720 # 12*60
+  scaler_class: 'VariableStandardScaler'
+  prediction_window: 120
+  select_top: 128
+
+data_config:
+  train:
+    loader:
+      batch_size: 16
+      repeat_times: 1
+    dataset:
+      variables_dropout: 0.2
+      <<: *common_dataset
+
+  val:
+    loader:
+      batch_size: 112
+      repeat_times: 4
+    dataset:
+      variables_dropout: 0
+      <<: *common_dataset
+
+  test:
+    loader:
+      batch_size: 112
+      repeat_times: 3
+    dataset:
+      variables_dropout: 0
+      <<: *common_dataset
+
+
+wandb_logger: {}
+
+trainer:
+  gradient_clip_val: 0.3
+
+
+
+checkpoint_callback:
+  monitor: *metric
+  mode: *metric_mode
+  save_top_k: 1
+
+early_stop_callback:
+  monitor: *metric
+  mode: *metric_mode
+  patience: 10

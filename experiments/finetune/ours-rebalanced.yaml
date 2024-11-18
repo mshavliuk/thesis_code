@@ -1,0 +1,22 @@
+%TAG !include! ./ours.yaml
+%TAG !depends-on! ../pretrain/ours.yaml
+%TAG !data-fractions! 0.1,0.5,1.0
+---
+
+description: "Finetune our base model with class balancing via resampling and no weighted loss"
+
+module_checkpoint: ours_pretrain:best
+
+module_config:
+  weighted_loss: false
+
+  optimizer:
+    fused: true
+
+data_config:
+  train:
+    loader:
+      balanced: true
+
+trainer:
+  gradient_clip_val: 0.0

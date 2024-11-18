@@ -1,0 +1,6 @@
+%TAG !include! ../finetune-base.yaml
+---
+
+description: "Finetune the model from scratch (pretraining excluded)"
+
+checkpoint: pretrain-zero:best

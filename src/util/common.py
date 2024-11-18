@@ -1,66 +1,62 @@
 import argparse
 import logging
+import os
+import sys
+from pathlib import Path
+from typing import Sequence
 
+import dpath
 import lightning as L
+import torch
 import wandb
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    ModelCheckpoint,
+)
 from lightning.pytorch.loggers import WandbLogger
 
 from src.lightning_module import (
     FinetuneModule,
     PretrainingModule,
 )
-from src.util.callbacks import get_callbacks
-
-from src.util.config_namespace import MainConfig
-from src.util.data_module import MIMICIIIDataModule
-from src.util.wandb import (
-    get_checkpoint_from_artifacts,
-    get_run_checkpoint,
+from src.util.config import MainConfig
+from src.util.data_module import (
+    MIMICIIIDataModule,
 )
 
 
-def find_checkpoint(config: MainConfig, args: argparse.Namespace, return_artifact: bool = False):
-    api = wandb.Api()
-    project = config.wandb_logger['project']
-    if hasattr(args, 'from_run') and args.from_run:
-        run = api.run(f"{project}/{args.from_run}")
-        return get_run_checkpoint(run)
-    elif hasattr(config, 'checkpoint') and (artifact_name := config.checkpoint):
-        artifact = api.artifact(f"{project}/{artifact_name}", type='model')
-        checkpoint = get_checkpoint_from_artifacts([artifact])
-        if return_artifact:
-            return checkpoint, artifact
-        else:
-            return checkpoint
+def create_data_module(
+    config: MainConfig,
+    logger: logging.Logger,
+    checkpoint: str | None = None
+) -> MIMICIIIDataModule:
+    kwargs = {
+        'stage': config.stage,
+        'logger': logger,
+    }
+    
+    if checkpoint is None:
+        kwargs |= {'data_config': config.data_config}
+        data = MIMICIIIDataModule(**kwargs)
+    elif config.stage=='finetune':
+        kwargs |= {'new_config': config.data_config}
+        data = MIMICIIIDataModule.load_from_checkpoint(checkpoint, **kwargs)
     else:
-        if return_artifact:
-            return None, None
-        else:
-            return None
+        kwargs |= {'data_config': config.data_config}
+        data = MIMICIIIDataModule.load_from_checkpoint(checkpoint, **kwargs)
 
-
-def create_data_module(config: MainConfig, logger: logging.Logger, checkpoint: str | None = None) -> MIMICIIIDataModule:
-    if checkpoint is not None:
-        data = MIMICIIIDataModule.load_from_checkpoint(
-            checkpoint,
-            stage=config.stage,
-            data_config=config.data_config,
-            logger=logger,
-        )
-    else:
-        data = MIMICIIIDataModule(
-            stage=config.stage,
-            data_config=config.data_config,
-            logger=logger,
-        )
     return data
+
 
 def create_model_module(
     config: MainConfig,
     logger: logging.Logger,
-    data: MIMICIIIDataModule,
+    data: MIMICIIIDataModule | None = None,
     checkpoint: str | None = None,
 ) -> PretrainingModule | FinetuneModule:
+    if data is None and checkpoint is None:
+        raise ValueError("Either data or checkpoint must be provided.")
+    
     if config.stage == 'pretrain':
         model_class = PretrainingModule
     elif config.stage == 'finetune':
@@ -68,51 +64,117 @@ def create_model_module(
     else:
         raise ValueError(f"Invalid stage: {config.stage}")
     
+    model_kwargs = {
+                       'module_config': config.module_config,
+                       'logger': logger,
+                   } | ({'features_info': data.get_features_info()} if data is not None else {})
+    
     if checkpoint is not None:
         model = model_class.load_from_checkpoint(
-            checkpoint,
+            checkpoint_path=checkpoint,
             strict=False,
-            module_config=config.module_config,
-            features_info=data.get_features_info(),
-            logger=logger,
+            **model_kwargs,
         )
+    
     else:
-        model = model_class(
-            module_config=config.module_config,
-            features_info=data.get_features_info(),
-            logger=logger,
-        )
+        model = model_class(**model_kwargs)
     return model
 
 
-def create_wandb_logger(args, config, artifact: wandb.Artifact | None = None):
-    offline = args.debug
-    if hasattr(args, 'from_run') and args.from_run:
-        kwargs = {'resume': 'must', 'id': args.from_run}
-    else:
-        kwargs = {}
+def create_wandb_logger(
+    args: argparse.Namespace,
+    config: MainConfig,
+    input_artifacts: Sequence[wandb.Artifact] | None = None,
+    config_extra: dict | None = None
+) -> WandbLogger:
+    offline = getattr(args, 'debug', False) or getattr(args, 'dry_run', False)
+    kwargs = {
+        'name': config.name,
+        'offline': offline,
+        'dir': os.environ['TEMP_DIR'] + '/wandb',
+        'config': dpath.merge(config.model_dump(mode='json'), config_extra),
+        'log_model': not offline,
+        'checkpoint_name': f"{config.name}_{config.stage}",
+        'job_type': config.stage,
+        'notes': config.description,
+    }
     
-    wandb_logger =  WandbLogger(
-        **config.wandb_logger,
-        name=config.name,
-        offline=offline,
-        # tags=[args.stage],
-        config=config,
-        log_model=not offline,
-        checkpoint_name=config.name,
-        **kwargs,
-    )
-    if artifact and not offline:
-        wandb_logger.experiment.use_artifact(artifact)
+    if getattr(args, 'from_run', False):
+        kwargs |= {'resume': 'must', 'id': args.from_run}
+    
+    kwargs |= config.wandb_logger  # any configs would replace the defaults
+    wandb_logger = WandbLogger(**kwargs)
+    if input_artifacts is not None and not offline:
+        for artifact in input_artifacts:
+            wandb_logger.experiment.use_artifact(artifact)
     return wandb_logger
 
 
-def create_trainer(args, config, wandb_logger: WandbLogger):
-    return L.Trainer(
-        **config.trainer,
-        accelerator='cpu' if args.debug else 'gpu',
-        num_sanity_val_steps=0,
-        enable_model_summary=False,
-        callbacks=get_callbacks(config),
-        logger=wandb_logger,
-    )
+def create_trainer(
+    config: MainConfig,
+    args: argparse.Namespace = argparse.Namespace(),
+    wandb_logger: WandbLogger | bool = False
+) -> L.Trainer:
+    kwargs = {
+        'num_sanity_val_steps': 0,
+        'enable_model_summary': False,
+        'callbacks': get_callbacks(config),
+        'logger': wandb_logger,
+    }
+    
+    if sys.stdout.isatty():
+        kwargs['enable_progress_bar'] = True
+    else:
+        kwargs['enable_progress_bar'] = False
+    
+    # Set accelerator based on CUDA availability
+    if torch.cuda.is_available():
+        kwargs['accelerator'] = 'gpu'
+        
+        # Set precision based on GPU support
+        if torch.cuda.is_bf16_supported():
+            kwargs['precision'] = 'bf16-mixed'
+        elif torch.amp.autocast_mode.is_autocast_available('cuda'):
+            kwargs['precision'] = '16-mixed'
+        else:
+            kwargs['precision'] = '32'
+    else:
+        kwargs['accelerator'] = 'cpu'
+        kwargs['precision'] = '32'
+    
+    kwargs |= config.trainer  # any configs would replace the defaults
+    
+    print(f"Using {kwargs['accelerator']} accelerator with {kwargs['precision']} precision")
+    
+    if getattr(args, 'dry_run', False):
+        kwargs['fast_dev_run'] = True
+    
+    return L.Trainer(**kwargs)
+
+
+def setup():
+    torch.set_float32_matmul_precision('medium')
+    if torch.__version__.startswith("2.5.0"):
+        # CUDNN is automatically preferred over Efficient Attention but much slower
+        # see https://github.com/pytorch/pytorch/pull/138522
+        torch.backends.cuda.enable_cudnn_sdp(False)
+    
+    # TODO: handle signals to exit gracefully
+    #   SIGTERM - from slurm
+    #   SIGINT - from keyboard or wandb UI
+
+
+def get_callbacks(config: MainConfig) -> list[L.Callback]:
+    early_stop = EarlyStopping(**config.early_stop_callback)
+    
+    checkpoint_kwargs = {
+        'save_top_k': 1,
+        'save_weights_only': True,
+        'verbose': True,
+        'dirpath': Path(os.environ['TEMP_DIR'], 'checkpoints', config.stage),
+        'filename': f"{config.name}_{{epoch}}_{{val_loss:.4f}}",
+    }
+    checkpoint_kwargs |= config.checkpoint_callback
+    checkpoint_callback = ModelCheckpoint(**checkpoint_kwargs)
+    
+    return [early_stop, checkpoint_callback]

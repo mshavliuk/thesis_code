@@ -1,0 +1,14 @@
+%TAG !include! ./ecdf.yaml
+---
+
+description: "Pretrain the model with ECDF scaler and sigmoid activation function"
+
+data_config:
+  train:
+    path: data_with_outliers/train
+
+  val:
+    path: data_with_outliers/val
+
+  test:
+    path: data_with_outliers/test

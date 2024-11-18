@@ -96,8 +96,8 @@ class DataPlottingJob:
             .select('e.*', 'code') # WARN: randomly selected first code will be used
         ).checkpoint()
         
-        self.plot_variables_distributions(events_to_plot, variables_df)
-        # self.plot_transform_comparison(feature_events, variables_df, 'Bilirubin (Total)')
+        # self.plot_variables_distributions(events_to_plot, variables_df)
+        self.plot_transform_comparison(events_to_plot, variables_df, 'Bilirubin (Total)')
     
     def plot_correlation_matrix(self, events):
         daily_events: pd.DataFrame = (
@@ -236,17 +236,21 @@ class DataPlottingJob:
         bin_num = 16
         bin_edges = np.linspace(events_df['value'].min(), events_df['value'].max(), bin_num)
         
-        plot_variable_distribution((variable,), events_df, var_data, bin_edges=bin_edges, ax=orig_ax)
+        plot_variable_distribution((variable,), events_df, var_data,
+                                   bin_edges=bin_edges, ax=orig_ax, clip=(0, 10000), bw_adjust=0.1)
         
         transformed = ecdf_scaler.transform(events_df)
         bin_edges = np.linspace(transformed['value'].min(), transformed['value'].max(), bin_num)
-        plot_variable_distribution((variable,), transformed, var_data, bin_edges=bin_edges, ax=ecdf_ax)
+        plot_variable_distribution(
+            (variable,), transformed, var_data,
+            bin_edges=bin_edges, ax=ecdf_ax, clip=(0, 1), bw_adjust=1.3)
         
         standard_scaler = VariableStandardScaler()
         standard_scaler.fit(events_df)
         transformed = standard_scaler.transform(events_df)
         bin_edges = np.linspace(transformed['value'].min(), transformed['value'].max(), bin_num)
-        plot_variable_distribution((variable,), transformed, var_data, bin_edges=bin_edges, ax=z_ax)
+        plot_variable_distribution((variable,), transformed, var_data,
+                                   bin_edges=bin_edges, ax=z_ax, bw_adjust=0.1)
         
         z_ax.set_xlabel('Z-score')
         ecdf_ax.set_xlabel('quantile')

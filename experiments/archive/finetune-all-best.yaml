@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 
 description: "Finetune with ecdf scaling, better dataset, random 24h windows, and with the best model from pretraining"
@@ -17,18 +17,18 @@ common_dataset:
   scaler_class: 'VariableECDFScaler'
   max_minute: 2880 # 48 * 60
 
-data_configd:
+data_config:
   train:
     random_window: true
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/train
+    path: original_strats_data_shifted/train
 
   val:
     repeat_times: 3
     random_window: true
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/val
+    path: original_strats_data_shifted/val
 
   test:
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/test
+    path: original_strats_data_shifted/test
 
 trainer:
   max_epochs: 120

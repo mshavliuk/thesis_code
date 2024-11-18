@@ -1,0 +1,23 @@
+%TAG !include! ./ours.yaml
+%TAG !depends-on! ../pretrain/ours.yaml
+%TAG !data-fractions! 0.1,0.5,1.0
+---
+
+description: "Finetune with small batch size to evaluate the effect of weighted BCE loss, gradient clipping disabled"
+
+module_checkpoint: ours_pretrain:best
+
+module_config:
+  optimizer:
+    fused: true
+
+
+data_config:
+  train:
+    loader:
+      batch_size: 4
+
+
+trainer:
+  gradient_clip_val: 0.0
+

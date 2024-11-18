@@ -83,21 +83,13 @@ class DataExtractor:
         return self._select_known_columns(icustays).cache()
     
     @cache
-    def get_icustay_ids(self) -> DataFrame:
-        return self.read_icustays().select('stay_id').distinct().cache()
-    
-    @cache
-    def get_admission_ids(self) -> DataFrame:
-        return self.read_admissions().select('admission_id').distinct().cache()
-    
-    @cache
     def read_admissions(self) -> DataFrame:
         admissions = self.spark.read.parquet(f'{Config.data_dir}/raw/ADMISSIONS.parquet')
         admissions = self._filter_not_null(
             admissions, {'HADM_ID', 'SUBJECT_ID', 'HOSPITAL_EXPIRE_FLAG'}) \
             .withColumnsRenamed(self.col_names_map) \
             .withColumn('died', F.col('died').cast('boolean')) \
-            .join(self.read_icustays().select('admission_id').distinct(), on='admission_id', how='inner')
+            .join(self.read_icustays(), on='admission_id', how='semi')
         
         return self._select_known_columns(admissions).cache()
     
@@ -116,7 +108,7 @@ class DataExtractor:
         outputevents = self._filter_not_null(
             outputevents, {'CHARTTIME', 'ITEMID', 'VALUE', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_icustay_ids(), on='stay_id', how='inner')
+            .join(self.read_icustays(), on='stay_id', how='semi')
         return self._select_known_columns(outputevents)
     
     def read_chartevents(self) -> DataFrame:
@@ -125,8 +117,6 @@ class DataExtractor:
             .filter((F.col('ERROR') == 0) | F.col('ERROR').isNull()) \
             .filter((F.col('VALUENUM').isNotNull()) | F.col('VALUE').isNotNull())
         # some chartevents have nullable ICUSTAY_ID, which is still valid
-        # RR my: 9,803,802
-        # after joining icu 8,115,504
         
         chartevents = self._filter_not_null(
             chartevents, {'CHARTTIME', 'ITEMID', 'SUBJECT_ID', 'ICUSTAY_ID'})
@@ -135,9 +125,8 @@ class DataExtractor:
             .drop('VALUENUM', 'VALUE') \
             .withColumnRenamed('new_value', 'value') \
             .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_icustay_ids(), on='stay_id', how='inner')
+            .join(self.read_icustays(), on='stay_id', how='semi')
         return self._select_known_columns(chartevents)
-    # RR count 8,115,504
     
     def read_labevents(self) -> DataFrame:
         # intubated labevents are categorical so value is string
@@ -159,7 +148,7 @@ class DataExtractor:
             inputevents,
             {'STARTTIME', 'ENDTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'AMOUNTUOM', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_icustay_ids(), on='stay_id', how='inner')
+            .join(self.read_icustays(), on='stay_id', how='semi')
         return self._select_known_columns(inputevents)
     
     def read_inputevents_cv(self) -> DataFrame:
@@ -168,12 +157,8 @@ class DataExtractor:
         inputevents = self._filter_not_null(
             inputevents, {'CHARTTIME', 'ITEMID', 'AMOUNT', 'ICUSTAY_ID', 'SUBJECT_ID'}) \
             .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_icustay_ids(), on='stay_id', how='inner')
+            .join(self.read_icustays(), on='stay_id', how='semi')
         return self._select_known_columns(inputevents)
-    
-    # their total rows 17,527,935, my 17,527,935
-    # my prefiltered by amount only 2,496,047, their 2,496,047
-    # my with all filters 2,496,047
     
     def read_weight_events(self) -> DataFrame:
         inputevents = self.spark.read.parquet(f'{Config.data_dir}/raw/INPUTEVENTS_MV.parquet')
@@ -184,7 +169,7 @@ class DataExtractor:
             'PATIENTWEIGHT': 'value',
             'STARTTIME': 'time'}) \
             .withColumnsRenamed(self.col_names_map) \
-            .join(self.get_icustay_ids(), on='stay_id', how='inner') \
+            .join(self.read_icustays(), on='stay_id', how='semi') \
             .withColumn('code', F.lit(self.WEIGHT_CODE)) \
             .withColumn('unit', F.lit('kg'))
         return self._select_known_columns(inputevents)

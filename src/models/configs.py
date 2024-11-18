@@ -1,14 +1,25 @@
 from dataclasses import dataclass
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
-@dataclass(frozen=True)
-class StratsConfig:
-    hid_dim: int
-    num_layers: int
-    num_heads: int
-    dropout: float
-    attention_dropout: float
+
+class StratsConfig(BaseModel):
+    hid_dim: int = Field(..., gt=0)
+    num_layers: int = Field(..., gt=0)
+    num_heads: int = Field(..., gt=0)
+    dropout: float = Field(..., ge=0, lt=1)
+    attention_dropout: float = Field(..., ge=0, lt=1)
     head_layers: list[str]
+    ablate: list[str] = Field(default_factory=list)
+    
+    # ts - entire timeseries embedding
+    #   cve_time - time embedding
+    #   cve_value - value embedding
+    #   variable_emb - variable embedding
+    # demo - demographics embedding
     
     def __post_init__(self):
         assert self.hid_dim > 0, 'Hidden dimension must be positive'

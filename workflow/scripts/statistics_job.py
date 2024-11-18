@@ -56,10 +56,10 @@ class StatisticsJob:
             labels[split] = pd.read_parquet(processing_outputs[f"{split}_mortality_labels"])
             events[split] = pd.read_parquet(processing_outputs[f"{split}_events"])
 
-        icustays = self.data_extractor.read_icustays()
         training = self.compute_splits_statistics(labels, events)
         self.save_as(training, 'training')
         splits_table = self.compute_splits_statistics_table(labels, events, icustays)
+        icustays = self.data_extractor.read_icustays()
         self.save_as(splits_table, 'splits_table')
         
         data_dir = Path(Config.data_dir) / 'raw'

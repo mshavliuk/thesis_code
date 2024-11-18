@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 description: "Finetune the model with ECDF scaler from the model which had sigmoid activation function during pretraining, but removed during finetuning"
 

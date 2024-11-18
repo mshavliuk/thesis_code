@@ -1,0 +1,33 @@
+%TAG !include! ../pretrain-base.yaml
+---
+
+description: "dev"
+
+
+data_config:
+  train:
+    loader:
+      batch_size: 2
+    dataset:
+      path: ./src/util/tests/data
+
+  val:
+    loader:
+      batch_size: 2
+    dataset:
+      path: ./src/util/tests/data
+
+  test:
+    loader:
+      batch_size: 2
+    dataset:
+      path: ./src/util/tests/data
+
+
+trainer:
+  max_epochs: 2
+
+
+early_stop_callback:
+  patience: 5
+

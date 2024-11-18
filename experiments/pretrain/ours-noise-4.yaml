@@ -1,0 +1,19 @@
+%TAG !include! ./ours.yaml
+---
+
+description: "Pretrain our base model with 25% of values replaced by uniformly-distributed noise"
+
+data_module_checkpoint: ours-noise-4_data_module:latest
+
+data_config:
+  train:
+    dataset:
+      path: datasets/noisy_uniform_p0.25/train
+
+  val:
+    dataset:
+      path: datasets/noisy_uniform_p0.25/val
+
+  test:
+    dataset:
+      path: datasets/noisy_uniform_p0.25/test

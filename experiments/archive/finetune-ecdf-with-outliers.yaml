@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 description: "Finetune the model with ECDF scaler from the model which had sigmoid activation function during pretraining, but removed during finetuning"
 
@@ -18,10 +18,10 @@ module_config:
 
 data_config:
   train:
-    path: /home/user/.cache/thesis/data/data_with_outliers/train
+    path: data_with_outliers/train
 
   val:
-    path: /home/user/.cache/thesis/data/data_with_outliers/val
+    path: data_with_outliers/val
 
   test:
-    path: /home/user/.cache/thesis/data/data_with_outliers/test
+    path: data_with_outliers/test

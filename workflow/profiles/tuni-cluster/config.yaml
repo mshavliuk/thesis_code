@@ -1,0 +1,11 @@
+jobs: 12
+keep-going: true
+nolock: true
+latency-wait: 10
+executor: "slurm"
+
+default-resources:
+    cpus_per_task: 2
+    slurm_extra: "'--gres=gpu:teslav100:1'"
+    slurm_partition: "gpu"
+    slurm_account: "tcsc"

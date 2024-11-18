@@ -1,0 +1,53 @@
+%TAG !include! ../pretrain-base.yaml
+---
+
+description: "Pretrain the model with original Strats architecture"
+
+
+data_module_checkpoint: original-strats_data_module:latest
+
+trainer:
+  gradient_clip_val: 0.3
+  max_epochs: 30 # same as in STraTS repo
+
+module_config:
+  disable_bias_norm_decay: false # decay all model parameters
+  model_name: StratsOriginal # use original Strats model
+  model:
+    attention_dropout: 0.2
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 16 # same as in STraTS repo, 2x from our base model
+    dropout: 0.2
+    head_layers:
+      - 'forecast_fc'
+
+  optimizer:
+    fused: false # Fused optimizer does not support gradient clipping
+
+
+__common_dataset__: &common_dataset
+  select_top: 0 # Use all data
+
+
+
+data_config:
+  train:
+    dataset:
+      path: datasets/original_strats_data/train
+      <<: *common_dataset
+
+  val:
+    loader:
+      batch_size: 56 # reduced batch size to avoid OOM
+      repeat_times: 3 # same as in STraTS repo
+    dataset:
+      path: datasets/original_strats_data/val
+      <<: *common_dataset
+
+  test:
+    loader:
+      batch_size: 56
+    dataset:
+      path: datasets/original_strats_data/test
+      <<: *common_dataset

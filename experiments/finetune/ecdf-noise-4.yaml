@@ -1,0 +1,9 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf-noise-4.yaml
+---
+
+description: "Finetune model with ECDF scaler and with 25% of values replaced by uniformly-distributed noise"
+
+
+module_checkpoint: ecdf-noise-4_pretrain:best
+

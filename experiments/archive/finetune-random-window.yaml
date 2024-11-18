@@ -1,4 +1,4 @@
-%TAG !include! ./base_config.yaml
+%TAG !include! ./finetune-base.yaml
 ---
 
 description: "Finetune the original model with randomly sampled 24h windows during training and better dataset"
@@ -13,15 +13,15 @@ data_config:
   train:
     random_window: true
 #    min_number_of_events: 100
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/train
+    path: original_strats_data_shifted/train
 
   val:
     repeat_times: 3
     random_window: true
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/val
+    path: original_strats_data_shifted/val
 
   test:
-    path: /home/user/.cache/thesis/data/original_strats_data_shifted/test
+    path: original_strats_data_shifted/test
 
 trainer:
   max_epochs: 120

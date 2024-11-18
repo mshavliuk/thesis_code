@@ -21,6 +21,12 @@ def rename_runs():
         run: wandb.apis.public.Run
         run.name = args.to
         run.update()
+        
+        # rename all child artifacts with same name
+        for artifact in run.logged_artifacts():
+            artifact: wandb.Artifact
+            artifact.name = args.to
+            artifact.save()
 
 
 if __name__ == '__main__':

@@ -1,12 +1,23 @@
 import itertools
 import os
-from dataclasses import dataclass
+from pathlib import Path
+from typing import (
+    ClassVar,
+    Literal,
+)
 
 import numpy as np
 import pandas as pd
 import pyarrow.compute as pc
 import pyarrow.dataset as ds
 from numba import jit
+from pydantic import (
+    BaseModel,
+    DirectoryPath,
+    Field,
+    field_serializer,
+    field_validator,
+)
 from torch.utils.data import Dataset as TorchDataset
 
 import src.util.variable_scalers as scaler_module
@@ -17,50 +28,48 @@ from src.util.variable_scalers import (
     TimeScaler,
 )
 
-
-@dataclass(frozen=True)
-class DatasetConfig:
-    path: str
-    """ Path to the dataset directory (including all 3 splits) """
-    variables_dropout: float  # supported only for pretrain dataset
-    """
-    Fraction of variables to drop from the sample.
-    Supported only for pretrain dataset.
-    """
-    max_events: int
-    """ Maximum number of events in the input window """
-    max_minute: int
-    """ Maximum minute in the input window """
-    
-    scaler_class: str
-    
-    select_top: int
-    """ Number of top variables to select, 0 to select all """
-    
-    def __post_init__(self):
-        assert self.path is not None, "Dataset path must be provided"
-        assert os.path.exists(self.path), f"Dataset {self.path} does not exist"
-        assert 0 <= self.variables_dropout <= 1, "Variables dropout must be in [0, 1] range"
-        assert self.max_events > 0, "Max events must be positive"
-        assert self.max_minute > 0, "Max minute must be positive"
-        
-        assert hasattr(scaler_module,
-                       self.scaler_class), f"Scaler class {self.scaler_class} not found"
+SUPPORTED_SCALERS = scaler_module.VariableStandardScaler.__name__, scaler_module.VariableECDFScaler.__name__
 
 
-@dataclass(frozen=True)
-class PretrainDatasetConfig(DatasetConfig):
-    prediction_gap: int
-    """ Gap between input and the start of prediction window"""
-    prediction_window: int
-    """ The size (in minutes) of the prediction window over which the values will be averaged """
-    min_input_minutes: int
-    """ Smallest input window size in minutes"""
+class DatasetConfig(BaseModel, extra='forbid'):
+    base_dir: ClassVar = Path(os.environ.get('DATA_DIR', os.getcwd())).resolve()
     
-    def __post_init__(self):
-        super().__post_init__()
-        assert self.prediction_gap >= 0, "Prediction gap must be non-negative"
-        assert self.prediction_window > 0, "Prediction window must be positive"
+    path: DirectoryPath = Field(description="Path to the dataset directory")
+    variables_dropout: float = Field(
+        ge=0, le=1, description="Fraction of variables to drop from the sample")
+    max_events: int = Field(gt=0, description="Maximum number of events in the input window")
+    max_minute: int = Field(gt=0, description="Maximum duration of the input window in minutes")
+    
+    scaler_class: Literal[SUPPORTED_SCALERS] = Field(description="Variable scaler class name")
+    
+    select_top: int = Field(
+        ge=0, default=0, description="Number of top variables to select, 0 to select all")
+    
+    @field_validator('path', mode='before')
+    @classmethod
+    def relative_path(cls, path: str) -> str | Path:
+        if not os.path.isabs(path):
+            return cls.base_dir / path
+        return path
+    
+    @field_serializer('path', mode='plain')
+    @classmethod
+    def serialize_path(cls, path: Path) -> str:
+        try:
+            # Check if path starts with base_dir; if so, return a relative path
+            relative_path = path.relative_to(cls.base_dir)
+            return str(relative_path)
+        except ValueError:
+            # If the path is not within base_dir, return it as an absolute path
+            return str(path)
+
+class FinetuneDatasetConfig(DatasetConfig, extra='ignore'):
+    pass
+
+class PretrainDatasetConfig(DatasetConfig, extra='forbid'):
+    prediction_window: int = Field(
+        ge=1, description="The size (in minutes) of the prediction window")
+    min_input_minutes: int = Field(ge=1, description="Smallest input window size in minutes")
 
 
 class AbstractDataset(TorchDataset):
@@ -69,7 +78,7 @@ class AbstractDataset(TorchDataset):
         self.max_minute = config.max_minute
         self.config = config
         self.data = None
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(42)
         
         events_pq = ds.dataset(os.path.join(config.path, 'events.parquet'), format='parquet')
         scanner = events_pq.scanner(columns=['variable'])
@@ -168,7 +177,6 @@ class PretrainDataset(AbstractDataset):
         super().__init__(config)
         self.config = config
     
-    # @profile
     def load_data(self):
         events = pd.read_parquet(
             os.path.join(self.config.path, 'events.parquet'),
@@ -212,9 +220,8 @@ class PretrainDataset(AbstractDataset):
             timestamps = np.unique(minutes)
             # >= min_input_minutes
             min_t1_idx = timestamps.searchsorted(self.config.min_input_minutes, 'left')
-            # < max - gap
-            max_t1_idx = timestamps.searchsorted(
-                minutes[-1] - self.config.prediction_gap, 'right') - 1
+            # < max_minute
+            max_t1_idx = timestamps.searchsorted(minutes[-1], 'right') - 1
             
             t1s = timestamps[min_t1_idx:max_t1_idx]
             
@@ -277,7 +284,7 @@ class PretrainDataset(AbstractDataset):
         stay_id = self.stay_ids[idx]
         sample = self.data[stay_id]
         
-        window = None
+        window, t1 = None, None
         while window is None or len(window[0]) == 0:
             t1 = next(sample['t1s'])  # end of input window
             t0 = t1 - self.max_minute
@@ -292,10 +299,9 @@ class PretrainDataset(AbstractDataset):
         # normalize time to [-1,1] range
         times = self.time_scaler.transform(minutes).astype(np.float32)
         
-        t1_prime = t1 + self.config.prediction_gap  # start of prediction window
-        t2 = t1_prime + self.config.prediction_window
+        t2 = t1 + self.config.prediction_window
         forecast_values, forecast_mask = self._get_forecast_data(
-            sample['minute'], sample['variable'], sample['value'], t1_prime, t2
+            sample['minute'], sample['variable'], sample['value'], t1, t2
         )
         
         if (num_samples := len(values)) <= self.max_events:
@@ -321,7 +327,7 @@ class PretrainDataset(AbstractDataset):
 
 class FinetuneDataset(AbstractDataset):
     def load_data(self):
-        if self.variable_scaler is None or self.demographic_scaler is None:
+        if None in self.get_scalers().values():
             raise ValueError("Scalers must be set before loading data")
         
         variables_type = pd.CategoricalDtype(categories=self.variable_scaler.variable_categories)
@@ -391,7 +397,7 @@ class FinetuneDataset(AbstractDataset):
                 'demographics': stay['demographics']
             }
         else:
-            selected_events = np.random.choice(num_samples, self.max_events, replace=False)
+            selected_events = self.rng.choice(num_samples, size=self.max_events, replace=False)
             return {
                 'values': values[selected_events],
                 'times': times[selected_events],

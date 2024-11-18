@@ -1,0 +1,27 @@
+%TAG !include! ../finetune-base.yaml
+%TAG !depends-on! ../pretrain/original-strats.yaml
+%TAG !data-fractions! 0.1,0.5,1.0
+---
+
+description: "Finetune the original STraTS model to validate the consistency with the original implementation"
+
+module_config:
+  weighted_loss: true
+  model_name: StratsOriginal
+  disable_bias_norm_decay: false
+  model:
+    attention_dropout: 0.2
+    hid_dim: 64
+    num_layers: 2
+    num_heads: 16
+    dropout: 0.2
+    head_layers:
+      - 'forecast_fc'
+      - 'binary_fc'
+
+  optimizer:
+    fused: false # Fused optimizer does not support clipping
+
+
+trainer:
+  gradient_clip_val: 0.3

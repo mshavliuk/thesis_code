@@ -1,0 +1,11 @@
+%TAG !include! ../finetune-base.yaml
+---
+
+description: "Finetune the original model speedup with flash attention"
+
+checkpoint: pretrain-ours:best
+
+data_config:
+  train:
+    dataset:
+      path: datasets/data_with_outliers_uniform_p0.1/train

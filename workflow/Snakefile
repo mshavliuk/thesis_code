@@ -1,39 +1,181 @@
+import os
+
 from snakemake.io import (
     directory,
     expand,
-    temp,
 )
 
+ALL_PRETRAIN_EXPERIMENTS = glob_wildcards("experiments/pretrain/{file}.yaml").file
+
+envvars:
+    "DATA_DIR",
+    "TEMP_DIR",
+    "WANDB_PROJECT",
+
+include: "rules/common.smk"
+
+data_dir = os.environ["DATA_DIR"]
 
 configfile: "workflow/config.yaml"
 
+
 rule all:
     input:
-        expand("{data_dir}/raw/{file}.parquet",file=config["mimic_files"], data_dir=config["data_dir"])
+        lambda _: checkpoints.generate_all_datasets.get().output,
+        lambda _: checkpoints.finetune_all.get().output,
 
 
 rule download_data:
     output:
-        "{data_dir}/raw/{file}.csv.gz"
+        temp(f"{data_dir}/raw/{{file}}.csv.gz"),
     conda:
         "envs/gloud.yml"
+    log:
+        "logs/download_data/{file}.log",
     params:
-        google_project_id=config["google_project_id"]
+        google_project_id=config["google_project_id"],
     shell:
-        "gsutil -u {params.google_project_id} cp gs://mimiciii-1.4.physionet.org/{wildcards.file}.csv.gz {output}"
+        "gsutil -u {params.google_project_id} cp gs://mimiciii-1.4.physionet.org/{wildcards.file}.csv.gz {output} > {log} 2> {log}"
 
 
 rule convert_data_to_parquet:
     conda:
         "envs/pyspark.yml"
     input:
-        data="{config['data_dir']}/raw/{file}.csv.gz"
+        f"{data_dir}/raw/{{file}}.csv.gz",
     output:
-        directory("{config['data_dir']}/raw/{file}.parquet")
+        directory(f"{data_dir}/raw/{{file}}.parquet"),
     log:
-        stdout="logs/spark_convert_to_parquet_{file}.log",
-        stderr="logs/spark_convert_to_parquet_{file}.log"
+        "logs/convert_to_parquet/{file}.log",
+    threads: 2,
+    resources:
+        mem_mb=4096,
+        runtime='1h',
     shell:
         """
-        spark-submit workflow/scripts/csv_gz_to_parquet.py {input.data} {output} > {log.stdout} 2> {log.stderr}
+        python workflow/scripts/csv_gz_to_parquet.py {input} {output} > {log} 2> {log}
         """
+
+checkpoint generate_dataset:
+    input:
+        expand(
+            f"{data_dir}/raw/{{mimic_file}}.parquet",
+            mimic_file=config["mimic_files"],
+        ),
+    params: lambda wc: dict_to_cli_args(config['datasets'][wc.dataset_name]),
+    output:
+        dataset=directory(f"{data_dir}/datasets/{{dataset_name}}"),
+        status="results/generate_dataset/{dataset_name}.SUCCESS",
+    log:
+        "logs/generate_dataset/{dataset_name}.log",
+    threads: min(workflow.cores,16),  # all available cores or 16, whichever is smaller
+    resources:
+        mem_mb=26624,# 26GB
+        runtime='1h',
+    shell:
+        """
+        python workflow/scripts/data_processing_job.py {params} --output-path={output.dataset} > {log} 2> {log}
+        
+        if [ $? -eq 0 ]; then
+            touch {output.status}
+        fi
+        """
+
+
+checkpoint generate_all_datasets:
+    input:
+        get_all_datasets_and_statuses,
+    output:
+        "results/generate_all_datasets.SUCCESS",
+
+rule pretrain:
+    input:
+        config="experiments/pretrain/{file}.yaml",
+        # datasets=lambda wc: workflow.get_rule("generate_all_datasets").input[0]
+        datasets=lambda wc: checkpoints.generate_all_datasets.get().output,
+    output:
+        "results/pretrain/{file}_fold-{fold}.SUCCESS",
+    log:
+        "logs/pretrain/{file}_fold-{fold}.log",
+    conda:
+        "../environment.yml",
+    resources:
+        mem_mb=8192,# 8GB
+        runtime='4h',
+        gpu=1,
+    shell:
+        """
+        python src/pretrain.py --config {input.config} > {log} 2> {log}
+        
+        if [ $? -eq 0 ]; then
+            touch {output}
+        fi
+        """
+
+
+rule pretrain_all:
+    input:
+        get_pretrain_all_dependent_paths,
+
+checkpoint test_pretrain:
+    input:
+        config="experiments/pretrain/{file}.yaml",
+        pretrain_folds=get_test_pretrain_dependent_paths,
+    log:
+        "logs/test_pretrain/{file}.log",
+    output:
+        "results/test_pretrain/{file}.SUCCESS",
+    conda:
+        "../environment.yml",
+    threads: 2,
+    resources:
+        mem_mb=8192,# 8GB
+        gpu=1,
+        runtime='2h',
+    shell:
+        "python src/run_tests.py --config {input.config} > {log} 2> {log} && touch {output}"
+
+
+rule finetune:
+    input:
+        pretrain_status=get_finetune_depend_on_pretrain_status,
+        config="experiments/finetune/{file}.yaml",
+    params:
+        n=config["number_of_folds"],
+    output:
+        "results/finetune/{file}_fraction-{fraction}.SUCCESS",
+    log:
+        "logs/finetune/{file}_fraction-{fraction}.log",
+    conda:
+        "../environment.yml",
+    threads: 2,
+    resources:
+        mem_mb=8192,# 8GB
+        gpu=1,
+
+        # 3 hours per 1 fold of 100% data
+        runtime=lambda wc: f"{float(wc.fraction) * 3 * config["number_of_folds"]}h",
+    shell:
+        """
+        python src/finetune.py --config {input.config} -n {params.n} -f {wildcards.fraction} > {log} 2> {log}
+        
+        if [ $? -eq 0 ]; then
+            touch {output}
+        fi
+        """
+
+
+rule finetune_config:
+    input:
+        get_finetune_config_dependent_paths,
+    output:
+        "results/finetune_config/{file}.SUCCESS",
+
+
+checkpoint finetune_all:
+    input:
+        get_finetune_all_dependent_paths,
+    output:
+        "results/finetune_all.SUCCESS",
+
+apply_defaults()

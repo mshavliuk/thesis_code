@@ -1,0 +1,5 @@
+%TAG !include! ./ours.yaml
+%TAG !depends-on! ../pretrain/ours-noise-10.yaml
+---
+
+description: "Finetune our base model with gaussian noise with magnitude 3.0 std added to all values"

@@ -1,0 +1,11 @@
+%TAG !include! ../pretrain/ours.yaml
+---
+
+data_module_checkpoint: test_data_module:latest
+
+
+
+description: "Pretrain a single epoch for testing purposes"
+
+trainer:
+    max_epochs: 1

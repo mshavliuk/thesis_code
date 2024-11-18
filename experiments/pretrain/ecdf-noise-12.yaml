@@ -1,0 +1,22 @@
+%TAG !include! ./ecdf.yaml
+---
+
+description: "Pretrain the model with ECDF scaler and with 100% of values replaced by uniformly-distributed noise"
+
+data_module_checkpoint: ecdf-noise-12_data_module:latest
+
+trainer:
+  max_epochs: 1 # does not make sense to fit the noise anyway
+
+data_config:
+  train:
+    dataset:
+      path: datasets/noisy_uniform_p1.0/train
+
+  val:
+    dataset:
+      path: datasets/noisy_uniform_p1.0/val
+
+  test:
+    dataset:
+      path: datasets/noisy_uniform_p1.0/test

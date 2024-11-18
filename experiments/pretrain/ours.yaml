@@ -1,0 +1,32 @@
+%TAG !include! ../pretrain-base.yaml
+---
+
+description: "Our main baseline model"
+
+data_module_checkpoint: ours_data_module:latest
+
+trainer:
+  gradient_clip_val: 0.3
+
+module_config:
+  model:
+    attention_dropout: 0.2
+    head_layers:
+      - 'forecast_fc'
+
+  optimizer:
+    fused: false # Fused optimizer does not support gradient clipping
+
+
+data_config:
+  train:
+    dataset:
+      path: datasets/original_strats_data/train
+
+  val:
+    dataset:
+      path: datasets/original_strats_data/val
+
+  test:
+    dataset:
+      path: datasets/original_strats_data/test

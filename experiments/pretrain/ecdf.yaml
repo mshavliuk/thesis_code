@@ -1,0 +1,33 @@
+%TAG !include! ../pretrain-base.yaml
+---
+
+description: "Pretrain the model with ECDF scaler and sigmoid activation function and gradient clipping"
+
+data_module_checkpoint: ecdf_data_module:latest
+
+module_config:
+  model:
+    head_layers:
+      - 'forecast_fc'
+      - 'sigmoid'
+
+
+__common_dataset__: &common_dataset
+  scaler_class: 'VariableECDFScaler'
+
+data_config:
+  train:
+    dataset:
+      path: datasets/original_strats_data/train
+      <<: *common_dataset
+
+  val:
+    dataset:
+      path: datasets/original_strats_data/val
+      <<: *common_dataset
+
+  test:
+    dataset:
+      path: datasets/original_strats_data/test
+      <<: *common_dataset
+

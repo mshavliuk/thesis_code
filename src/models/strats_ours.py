@@ -20,7 +20,7 @@ class CVE(nn.Module):
     
     def forward(self, x):
         # x: bsz, max_len
-        x = torch.unsqueeze(x, -1)
+        x = x.unsqueeze(-1)
         x = self.fnn(x)
         return x
 
@@ -40,7 +40,7 @@ class FusionAtt(nn.Module):
         
         att = att + (~mask) * torch.finfo(x.dtype).min
         att = torch.softmax(att, dim=-1)  # bsz,max_len
-        return att
+        return att.unsqueeze(-1)
 
 
 class MultiHeadAttention(nn.Module):
@@ -66,7 +66,7 @@ class MultiHeadAttention(nn.Module):
         """
         bsz, seq_len, _ = x.size()
         # Combined projection for q, k, v
-        qkv: torch.Tensor = self.qkv_proj(x)  # (bsz, seq_len, 3 * num_heads * dk)
+        qkv: torch.Tensor = self.qkv_proj(x)  # (bsz, seq_len, num_heads * dk * 3)
         
         # (bsz, num_heads, seq_len, dk, 3)
         qkv = qkv.view(bsz, seq_len, self.num_heads, 3, self.dk).permute(0, 2, 1, 4, 3)
@@ -119,7 +119,39 @@ class Transformer(nn.Module):
         return x
 
 
+class ZeroOutputPlaceholder(nn.Module):
+    def __init__(self, input_dims: tuple[int, ...], output_dim: int):
+        super(ZeroOutputPlaceholder, self).__init__()
+        self.output_dim = output_dim
+        self.input_dims = input_dims
+    
+    def forward(self, x, *args, **kwargs):
+        dim = (x.size(d) for d in self.input_dims)
+        return torch.zeros(*dim, self.output_dim, device=x.device, dtype=x.dtype)
+
 class StratsOurs(nn.Module):
+    def ablate(self, config: StratsConfig):
+        components_map = {
+            'ts': ('cve_time', 'cve_value', 'variable_emb', 'transformer', 'fusion_att'),
+            'cve_time': ('cve_time',),
+            'cve_value': ('cve_value',),
+            'variable_emb': ('variable_emb',),
+            'demo': ('demo_emb',),
+        }
+        for component in config.ablate:
+            to_ablate = components_map[component]
+            for module_name in to_ablate:
+                output_dim = config.hid_dim
+                input_dims = (0, 1)
+                
+                if module_name == 'fusion_att':
+                    output_dim = 1
+                
+                if module_name == 'demo_emb':
+                    input_dims = (0,)
+                
+                setattr(self, module_name, ZeroOutputPlaceholder(input_dims, output_dim))
+    
     def __init__(
         self,
         config: StratsConfig,
@@ -129,9 +161,11 @@ class StratsOurs(nn.Module):
         
         self.cve_time = CVE(config.hid_dim)
         self.cve_value = CVE(config.hid_dim)
-        self.variable_emb = nn.Embedding(features_info.features_num + 1,
-                                         config.hid_dim,
-                                         padding_idx=features_info.features_num)
+        self.variable_emb = nn.Embedding(
+            features_info.features_num + 1,
+            config.hid_dim,
+            padding_idx=features_info.features_num)
+        
         self.transformer = Transformer(config)
         self.fusion_att = FusionAtt(config.hid_dim)
         self.dropout = nn.Dropout(config.dropout)
@@ -141,6 +175,9 @@ class StratsOurs(nn.Module):
             nn.Tanh(),
             nn.Linear(config.hid_dim * 2, config.hid_dim)
         )
+        
+        if config.ablate:
+            self.ablate(config)
         
         head_layers = {
             'forecast_fc': lambda inp_dim: nn.Linear(inp_dim, features_info.features_num),
@@ -164,23 +201,23 @@ class StratsOurs(nn.Module):
         variables: torch.Tensor,
         input_mask: torch.Tensor,
         demographics: torch.Tensor,
-        **kwargs,
     ):
-        # demographics embedding
-        demo_emb = self.demo_emb(demographics)
-        
         # initial triplet embedding
         time_emb = self.cve_time(times)
         value_emb = self.cve_value(values)
         variable_emb = self.variable_emb(variables)
         triplet_emb = time_emb + value_emb + variable_emb
         triplet_emb = self.dropout(triplet_emb)
+        
         # contextual triplet emb
         contextual_emb = self.transformer(triplet_emb, input_mask)
         
         # fusion attention
-        attention_weights = self.fusion_att(contextual_emb, input_mask)[:, :, None]
+        attention_weights = self.fusion_att(contextual_emb, input_mask)
         ts_emb = (contextual_emb * attention_weights).sum(dim=1)
+        
+        # demographics embedding
+        demo_emb = self.demo_emb(demographics)
         
         # concat demographics and ts_emb
         ts_demo_emb = torch.cat((ts_emb, demo_emb), dim=-1)

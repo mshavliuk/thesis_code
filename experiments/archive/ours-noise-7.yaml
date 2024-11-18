@@ -1,0 +1,20 @@
+%TAG !include! ./ours.yaml
+---
+
+description: "Pretrain our base model with 50% gaussian noise with magnitude 2.0 std"
+
+
+data_module_checkpoint: ours-noise-7_data_module:latest
+
+data_config:
+  train:
+    dataset:
+      path: datasets/noisy_gaussian_p0.5_m2.0/train
+
+  val:
+    dataset:
+      path: datasets/noisy_gaussian_p0.5_m2.0/val
+
+  test:
+    dataset:
+      path: datasets/noisy_gaussian_p0.5_m2.0/test
