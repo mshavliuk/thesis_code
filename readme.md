@@ -230,6 +230,7 @@ snakemake results/finetune_config/ecdf.SUCCESS
 ```
 
 The Snakemake DAG for this pipeline:
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./images/ecdf_workflow_dag_dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./images/ecdf_workflow_dag_light.svg">
