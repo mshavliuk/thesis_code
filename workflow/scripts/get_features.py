@@ -42,7 +42,7 @@ def get_features():
             **BLOOD_PRESSURE_FILTER,
         },
         {
-            'name': 'GCS_eye',  # FIXME: GCS are categorical data!
+            'name': 'GCS_eye',  # GCS are categorical data!
             'codes': [184, 220739],
             'categorical': True,
         },

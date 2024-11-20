@@ -1,4 +1,5 @@
 %TAG !include! ./ecdf.yaml
+%TAG !dataset! noisy_uniform_p1.0
 ---
 
 description: "Pretrain the model with ECDF scaler and with 100% of values replaced by uniformly-distributed noise"

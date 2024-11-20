@@ -1,4 +1,5 @@
 %TAG !include! ../pretrain-base.yaml
+%TAG !dataset! original_strats_data
 ---
 
 description: "Our main baseline model"

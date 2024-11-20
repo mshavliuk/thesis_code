@@ -1,11 +1,4 @@
-# ==============================================================================
-# WARNING: This is a distribution version of the configuration file.
-# Please ensure you replace the placeholders with actual values before use.
-# ==============================================================================
 ---
-google_project_id: 'see from `gcloud projects list`'
-
-
 number_of_folds: 10
 data_fractions: [0.1, 0.5, 1.0, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
 
@@ -60,6 +53,12 @@ datasets:
     split-by-strats: true
 
   noisy_uniform_p0.75:
+    noise-type: 'uniform'
+    noise-p: 0.75
+    leave-outliers: true
+    split-by-strats: true
+
+  noisy_uniform_p1.0:
     noise-type: 'uniform'
     noise-p: 0.75
     leave-outliers: true

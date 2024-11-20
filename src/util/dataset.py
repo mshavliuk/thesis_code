@@ -120,8 +120,8 @@ class AbstractDataset(TorchDataset):
     
     def get_features_info(self) -> FeaturesInfo:
         return FeaturesInfo(
-            features_num=int(self.num_variables),
-            demographics_num=int(self.num_demographics)
+            features_num=self.num_variables,
+            demographics_num=self.num_demographics,
         )
     
     def load_data(self):
@@ -243,11 +243,6 @@ class PretrainDataset(AbstractDataset):
         
         self.stay_ids = list(self.data.keys())
     
-    # def __getstate__(self):
-    #     state = self.__dict__.copy()
-    #     state.pop('data')
-    #     return state
-    
     @staticmethod
     @jit
     def _get_mean_values(values: np.ndarray, variables: np.ndarray, num_variables: int):
@@ -281,6 +276,9 @@ class PretrainDataset(AbstractDataset):
         return forecast_values, forecast_mask
     
     def __getitem__(self, idx):
+        if self.data is None:
+            raise ValueError("Data has not been loaded")
+        
         stay_id = self.stay_ids[idx]
         sample = self.data[stay_id]
         
@@ -333,8 +331,8 @@ class FinetuneDataset(AbstractDataset):
         variables_type = pd.CategoricalDtype(categories=self.variable_scaler.variable_categories)
         
         mortality_labels = pd.read_parquet(
-            os.path.join(self.config.path, 'mortality_labels.parquet'),
-        ).set_index('stay_id').astype({'died': 'float32'})
+            self.config.path / 'labels.parquet',
+        ).set_index('stay_id').astype({'died': 'float32'}) # convert to float32 to match the model output
         
         events = pd.read_parquet(
             os.path.join(self.config.path, 'events.parquet'),
@@ -374,6 +372,9 @@ class FinetuneDataset(AbstractDataset):
         self.stay_ids = list(self.data.keys())
     
     def __getitem__(self, idx) -> dict:
+        if self.data is None:
+            raise ValueError("Data has not been loaded")
+        
         stay_id = self.stay_ids[idx]
         stay = self.data[stay_id]
         

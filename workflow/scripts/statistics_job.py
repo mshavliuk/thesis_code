@@ -4,7 +4,6 @@ import logging
 import os
 from functools import reduce
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -15,64 +14,73 @@ from pyspark.sql import (
 )
 
 from workflow.scripts.config import Config
-from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
-from workflow.scripts.misc import sample_events
+from workflow.scripts.get_features import get_features
 from workflow.scripts.spark import get_spark
 
 
 class StatisticsJob:
     outputs = {
-        key: f"{Config.data_dir}/statistics/{key}.csv" for key in
-        ('features', 'variables', 'patient_journey', 'training', 'raw_dataset', 'splits_table', 'raw_numbers')
+        key: f"{Config.data_dir}/statistics/{key}.csv" for key in (
+            'features',
+            'variables',
+            'patient_journey',
+            'training',
+            'raw_dataset',
+            'splits_table',
+            'raw_numbers'
+        )
     }
     
     def __init__(self, spark: SparkSession):
         self.spark = spark
         self.data_extractor = DataExtractor(spark)
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(Config.log_level)
+        
         out_dir = f'{Config.data_dir}/statistics'
         os.makedirs(out_dir, exist_ok=True)
     
-    def run(self, output_path: str):
+    def run(self, dataset_path: str):
         """
-        Compute statistics for raw and preprocessed datasets.
+        Compute statistics for datasets.
         Stores the results in the statistics directory as csv files.
         :return:
         """
         raw_numbers = self.raw_numbers()
         self.save_as(raw_numbers, 'raw_numbers')
-        processing_outputs = DataProcessingJob(self.data_extractor, output_path).outputs
+        processing_outputs = DataProcessingJob.get_outputs(dataset_path)
         features = get_features()
         items = self.data_extractor.read_items()
         features_df = self.compute_features_statistics(features, items)
         self.save_as(features_df, 'features')
-
+        
         # training data statistics: train/test/val lengths, death prevalence
         splits = ('train', 'test', 'val')
         labels, events = {}, {}
         for split in splits:
             labels[split] = pd.read_parquet(processing_outputs[f"{split}_mortality_labels"])
             events[split] = pd.read_parquet(processing_outputs[f"{split}_events"])
-
+        
         training = self.compute_splits_statistics(labels, events)
         self.save_as(training, 'training')
-        splits_table = self.compute_splits_statistics_table(labels, events, icustays)
+        
         icustays = self.data_extractor.read_icustays()
+        splits_table = self.compute_splits_statistics_table(labels, events, icustays)
         self.save_as(splits_table, 'splits_table')
         
-        data_dir = Path(Config.data_dir) / 'raw'
-        # get all files and dir sizes
-        data_files = data_dir.glob('*.parquet')
-        raw_dataset = self.compute_raw_dataset_statistics(data_files)
+        raw_dataset = self.compute_raw_dataset_statistics()
         self.save_as(raw_dataset, 'raw_dataset')
+        
         all_events = []
         for split in splits:
             all_events.append(spark.read.parquet(processing_outputs[f"{split}_events"]))
         all_events = reduce(DataFrame.unionByName, all_events)
+        
         variables = self.compute_variables_statistics(all_events)
         self.save_as(variables, 'variables')
+        
         patient_journey_stats = self.compute_patient_journey_statistics(all_events, icustays)
         self.save_as(patient_journey_stats, 'patient_journey')
         
@@ -81,6 +89,22 @@ class StatisticsJob:
     def save_as(self, df: pd.DataFrame, key: str):
         df.to_csv(self.outputs[key], index=False, header=True)
         self.logger.info(f'Saved {key} statistics to {self.outputs[key]}')
+    
+    def sample_events(self, events: DataFrame, n: int):
+        """
+        Sample no more than n events (with a small deviation) for every variable.
+        :param events:
+        :param n: sample count
+        :return:
+        """
+        fractions = (
+            events.groupby('variable')
+            .count()
+            .withColumn('fraction', F.least(F.lit(1), F.lit(n) / F.col('count')))
+            .drop('count')
+            .rdd.collectAsMap()
+        )
+        return events.sampleBy('variable', fractions=fractions)
     
     def compute_variables_statistics(self, events: DataFrame):
         @F.udf(returnType='double')
@@ -98,7 +122,7 @@ class StatisticsJob:
             distance = np.mean(np.abs(data_sorted - normal_quantiles))
             return float(distance)
         
-        events_sample = sample_events(events, 5000)
+        events_sample = self.sample_events(events, 5000)
         norm_pvalues = (
             events_sample.groupBy('variable')
             .agg(
@@ -266,14 +290,18 @@ class StatisticsJob:
         
         return pd.DataFrame(data, columns=['statistic', 'value'], dtype=object)
     
-    def compute_raw_dataset_statistics(self, parquets: Iterable[Path]):
+    def compute_raw_dataset_statistics(self):
+        data_dir = Path(Config.data_dir) / 'raw'
+        # get all files and dir sizes
+        data_files = data_dir.glob('*.parquet')
+        
         def get_row(parquet_file: Path):
             dataset = pq.ParquetDataset(parquet_file)
             num_rows = sum(f.metadata.num_rows for f in dataset.fragments)
             file_size = sum(Path(f).stat().st_size / 2 ** 20 for f in dataset.files)
             return parquet_file.name, num_rows, file_size
         
-        rows = [get_row(p) for p in parquets]
+        rows = [get_row(p) for p in data_files]
         df = pd.DataFrame(rows, columns=['file', 'rows', 'size_mb'])
         return df
     
@@ -312,7 +340,6 @@ class StatisticsJob:
             ('TotalICUStays', total_icustays.count()),
         ], columns=['statistic', 'value'], dtype=object)
         return df
-        
     
     def count_sanitized_events(self):
         events = DataProcessingJob.process_outliers.get_cached_df(self.spark)
@@ -357,16 +384,13 @@ class StatisticsJob:
 
 
 if __name__ == '__main__':
-    # spark = SparkSession.builder.appName('StatisticsJob').getOrCreate()
-    
     parser = argparse.ArgumentParser()
-    # FIXME: rename to --dataset-path
-    parser.add_argument('--output-path', type=str, required=True, help='Path to output directory')
+    parser.add_argument('--dataset-path', type=str, required=True, help='Path to output directory')
     args = parser.parse_args()
     
     spark = get_spark('StatisticsJob')
     job = StatisticsJob(spark)
-    job.run(args.output_path)
+    job.run(args.dataset_path)
     # job.chartevents()
     # job.labevents()
     # job.count_sanitized_events()

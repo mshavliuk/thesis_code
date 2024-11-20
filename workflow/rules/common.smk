@@ -12,11 +12,14 @@ from yaml import SafeLoader
 def fold_range(*args):
     return range(1,config["number_of_folds"] + 1)
 
+
 def all_pretrain_configs(*args, **kwargs):
     return glob_wildcards("experiments/pretrain/{file}.yaml").file
 
+
 def all_finetune_configs(*args, **kwargs):
     return glob_wildcards("experiments/finetune/{file}.yaml").file
+
 
 def get_config_tags(config_path: Path) -> dict:
     with config_path.open('r') as f:
@@ -34,6 +37,14 @@ def get_config_dependency(config_path: Path):
     return Path(config_path.parent,tags['!depends-on!']).resolve()
 
 
+def get_pretrain_dependency_paths(wildcards):
+    config_file = Path(f"experiments/pretrain/{wildcards.file}.yaml")
+    tags = get_config_tags(config_file)
+    if '!dataset!' not in tags:
+        return None
+
+    return checkpoints.generate_dataset.get(dataset_name=tags['!dataset!']).output
+
 def get_test_pretrain_dependent_paths(wildcards):
     pretrain_output = [
         workflow.get_rule('pretrain').expand_output(
@@ -42,15 +53,17 @@ def get_test_pretrain_dependent_paths(wildcards):
     ]
     return chain.from_iterable(pretrain_output)
 
+
 def get_pretrain_all_dependent_paths(*args, **kwargs):
     pretrain_output = [
         workflow.get_rule('pretrain').expand_output(
             wildcards={'file': file, 'fold': fold}
         )[0] for file, fold in product(
-            all_pretrain_configs(), fold_range()
+            all_pretrain_configs(),fold_range()
         )
     ]
     return chain.from_iterable(pretrain_output)
+
 
 def get_finetune_config_dependent_paths(wildcards):
     finetune_output = [
@@ -60,6 +73,7 @@ def get_finetune_config_dependent_paths(wildcards):
     ]
 
     return chain.from_iterable(finetune_output)
+
 
 def get_finetune_all_dependent_paths(*args, **kwargs):
     finetune_output = [
@@ -78,11 +92,9 @@ def get_finetune_depend_on_pretrain_status(wildcards):
 
 def dict_to_cli_args(d: dict):
     return " ".join(
-        f"--{key}" if isinstance(value,bool) and value else f"--{key}={value}"
+        f"--{key}" if isinstance(value, bool) and value else f"--{key}={value}"
         for key, value in d.items() if value is not False
     )
-
-    return " ".join(f"--{key}={value}" for key, value in d.items())
 
 
 def get_finetune_data_fractions(wildcards):

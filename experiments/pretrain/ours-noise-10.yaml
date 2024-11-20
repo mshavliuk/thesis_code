@@ -1,4 +1,5 @@
 %TAG !include! ./ours.yaml
+%TAG !dataset! noisy_gaussian_p1.0_m3.0
 ---
 
 description: "Pretrain our base model with gaussian noise with magnitude 3.0 std added to all values"

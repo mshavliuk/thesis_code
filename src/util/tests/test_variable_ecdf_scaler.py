@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,9 +14,9 @@ class TestVariableECDFScaler:
         return VariableECDFScaler()
     
     @pytest.fixture
-    def events(self):
+    def events(self, data_path: Path):
         return pd.read_parquet(
-            './src/util/tests/data/events.parquet',
+            data_path / 'events.parquet',
             columns=['stay_id', 'value', 'variable', 'minute'],
         ).astype({'variable': 'category', 'value': 'float32'})
 
@@ -43,7 +45,7 @@ class TestVariableECDFScaler:
         scaler.fit(events)
         scaled = scaler.transform(events)
         unscaled = scaler.inverse_transform(scaled)
-        npt.assert_allclose(unscaled['value'], events['value'], atol=1e-5, rtol=0.01)
+        npt.assert_allclose(unscaled['value'], events['value'], atol=1e-3, rtol=1e-3)
         assert unscaled['minute'].equals(events['minute'])
         assert unscaled['stay_id'].equals(events['stay_id'])
         assert unscaled['variable'].equals(events['variable'])

@@ -1,5 +1,9 @@
+"""
+Running STRATS on MIMIC-III dataset.
 
-workdir: "/home/srmish/strats/src"
+"""
+
+workdir: "/home/srmish/strats/src" # path to https://github.com/sindhura97/STraTS repo dir
 
 rule all:
     input:
@@ -20,8 +24,6 @@ rule mimic:
         "results/mimic/{fraction}_{fold}.SUCCESS",
     log:
         "logs/mimic/{fraction}_{fold}.log",
-    # conda:
-    #     ...
     resources:
         mem_mb=16*1024,
         gpu=1,
@@ -40,8 +42,6 @@ rule grud:
         "results/grud/{fraction}_{fold}.SUCCESS",
     log:
         "logs/grud/{fraction}_{fold}.log",
-    # conda:
-    #     ...
     resources:
         mem_mb=16*1024,
         gpu=1,

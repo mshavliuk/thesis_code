@@ -1,4 +1,4 @@
-name: thesis_code
+name: ecdf_thesis
 channels:
   - pytorch
   - nvidia
@@ -8,8 +8,9 @@ channels:
 dependencies:
   - cudnn=9.3.*
   - gcc=14.2.* # for compiling torch models
-  - numpy=2.0.*
+  - google-cloud-sdk=501.* # does not support any python>3.11
   - pip=24.2.*
+  - pyspark=3.5.* # potentially incompatible with numpy 2
   - python=3.12.*
   - pytorch-cuda=12.1.*
   - pytorch::pytorch=2.4.*
@@ -18,26 +19,14 @@ dependencies:
     - dpath==2.2.*
     - lightning==2.4.*
     - numba==0.60.*
-    - numpy==2.0.* # has to be repeated for pip to avoid previous version reinstall
+    - numpy==2.0.*
     - pyarrow==17.0.*
     - pydantic==2.9.*
     - pytest==8.3.*
     - scikit-learn==1.5.*
     - scipy==1.14.*
     - seaborn==0.13.*
-    - snakemake-executor-plugin-slurm=0.11.*
+    - snakemake-executor-plugin-slurm==0.11.*
     - torchmetrics==1.4.*
     - wandb==0.18.*
-variables:
-  DATA_DIR: /home/user/.cache/thesis/data
-  MPLCONFIGDIR: /tmp/matplotlib
-#  PYTHONPATH: /home/user/projects/thesis_code
-  TEMP_DIR: /home/user/.cache/thesis/tmp
-  SNAKEMAKE_OUTPUT_CACHE: /mnt/snakemake-cache/
-  XDG_CACHE_HOME: /home/user/.cache
-#  DATA_DIR: /home/srmish/thesis/data
-#  MPLCONFIGDIR: /scratch/srmish/matplotlib
-#  PYTHONPATH: /home/srmish/thesis
-#  TEMP_DIR: /scratch/srmish/
-#  SNAKEMAKE_OUTPUT_CACHE: /scratch/srmish/snakemake-cache/
-  WANDB_PROJECT: Strats
+

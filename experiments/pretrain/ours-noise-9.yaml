@@ -1,4 +1,5 @@
 %TAG !include! ./ours.yaml
+%TAG !dataset! noisy_uniform_p0.75
 ---
 
 description: "Pretrain our base model with 75% of values replaced by uniformly-distributed noise"

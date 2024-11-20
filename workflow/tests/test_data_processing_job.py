@@ -1,3 +1,4 @@
+import tempfile
 from datetime import datetime
 
 import pytest
@@ -7,12 +8,12 @@ from pyspark.sql import (
 
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
-from workflow.tests.conftest import data_processing_job
 
 
 @pytest.fixture(scope="function", name='obj')
-def data_processing_job_shortcut(data_processing_job: DataProcessingJob):
-    return data_processing_job
+def obj(data_extractor: DataExtractor):
+    with tempfile.TemporaryDirectory() as dir_name:
+        yield DataProcessingJob(data_extractor, dir_name)
 
 
 class TestSplitAmountHourly:
@@ -28,19 +29,40 @@ class TestSplitAmountHourly:
         ]
         assert list(result) == expected
     
-    def test_with_partial_hour(self, split_amount_hourly):
-        result = split_amount_hourly(100, datetime(2020, 1, 1, 10), 2.5)
-        expected = [
+    @pytest.mark.parametrize("amount,time,num_hours,expected_result", [
+        (100, datetime(2020, 1, 1, 10), 2.5, [
             (datetime(2020, 1, 1, 8, 30), 40.0),
             (datetime(2020, 1, 1, 9, 30), 40.0),
-            (datetime(2020, 1, 1, 10), 20.0)]
-        assert list(result) == expected
+            (datetime(2020, 1, 1, 10), 20.0)
+        ]),
+        (100, datetime(2021, 1, 1, 10), 4, [
+            (datetime(2021, 1, 1, 7), 25.0),
+            (datetime(2021, 1, 1, 8), 25.0),
+            (datetime(2021, 1, 1, 9), 25.0),
+            (datetime(2021, 1, 1, 10), 25.0)
+        ]),
+    ])
+    def test_with_partial_hour(self, split_amount_hourly, amount, time, num_hours, expected_result):
+        result = split_amount_hourly(amount, time, num_hours)
+        assert list(result) == expected_result
     
     def test_with_less_than_one_hour(self, split_amount_hourly):
         result = split_amount_hourly(50, datetime(2020, 1, 1, 1), 0.5)
         expected = [(datetime(2020, 1, 1, 1), 50.0)]
         
         assert list(result) == expected
+    
+    def test_less_than_5_min_tail(self, split_amount_hourly):
+        result = split_amount_hourly(121.5, datetime(2022, 1, 1, 10, 3), 4.05)
+        expected = [
+            (datetime(2022, 1, 1, 7), 30.0),
+            (datetime(2022, 1, 1, 8), 30.0),
+            (datetime(2022, 1, 1, 9), 30.0),
+            (datetime(2022, 1, 1, 10, 3), 31.5),
+        ]
+        
+        assert [(time.replace(microsecond=0), pytest.approx(amount))
+                for time, amount in result] == expected
     
     def test_with_zero_hours(self, split_amount_hourly):
         result = split_amount_hourly(100, datetime(2020, 1, 1, 10), 0)
@@ -49,30 +71,25 @@ class TestSplitAmountHourly:
         assert list(result) == expected
     
     def test_with_negative_hours(self, split_amount_hourly):
-        # this looks unexpected, but it's the way it was treated in the original paper
         result = split_amount_hourly(100, datetime(2020, 1, 1, 10), -1)
-        expected = [(datetime(2020, 1, 1, 10), 100)]
         
-        assert list(result) == expected
+        assert list(result) == []
 
 
 class TestProcessOutliers:
     @pytest.fixture(scope="function")
-    def features(self):
+    def features(self, spark):
         return [
             {
                 'name': 'Temperature',
                 'codes': [1, 2, 3],
-                'min': 14.2,
-                'max': 47,
-                'outliers': 'remove',
+                'filtering': {'valid': F.col('value').between(14, 47), 'action': 'remove'},
             },
             {
                 'name': 'HR',
                 'codes': [4, 5, 6],
-                'min': 40,
-                'max': 200,
-                'outliers': 'replace_with_median',
+                'filtering': {'valid': F.col('value').between(40, 200),
+                              'action': 'replace_with_median'},
             }
         ]
     
@@ -94,30 +111,6 @@ class TestProcessOutliers:
         assert set(result.columns) == {'code', 'value', 'time', 'variable'}
         result_values = result.orderBy('code').rdd.map(lambda x: x.value).collect()
         assert result_values == [36.6, 37.1, 36.9, 100, 100, 100]
-    
-    def test_partial_filtering_config_raises_error(self, obj: DataProcessingJob, df, features):
-        for config_key in 'min', 'max', 'outliers':
-            config = features[0].copy()
-            del config[config_key]
-            with pytest.raises(ValueError,
-                               match="Filtering config for group Temperature should contain ..."):
-                obj.process_outliers(df, [config])
-    
-    def test_distinct_config_for_same_variable_raises_error(
-        self,
-        obj: DataProcessingJob,
-        df,
-        features
-    ):
-        features = [
-            features[0],
-            features[0].copy(),
-            features[1],
-        ]
-        features[1]['min'] += 1
-        with pytest.raises(ValueError,
-                           match="Filtering configs for variable Temperature are different"):
-            obj.process_outliers(df, features)
 
 
 class TestApplyFeatureSelectors:
@@ -155,17 +148,3 @@ class TestApplyFeatureSelectors:
         result_values = result.orderBy('code').rdd.map(lambda x: x.feature_value).collect()
         for expected, actual in zip([36.6, 37.1, 36.9, 36.8, 36.6, 36.73], result_values):
             assert pytest.approx(expected, 0.01) == actual
-
-class TestPreprocess:
-    def test_preprocess(self, obj: DataProcessingJob):
-        obj.run()
-
-
-class TestDistributeEventsHourly:
-    @pytest.fixture(scope="function")
-    def df(self, data_extractor: DataExtractor):
-        return data_extractor.read_inputevents_mv()
-    
-    def test_distribute_events_hourly(self, obj: DataProcessingJob, df):
-        result = obj.distribute_events_hourly(df)
-        print(result.count())

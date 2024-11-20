@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 from typing import (
     Callable,
     get_type_hints,
@@ -47,9 +48,15 @@ def cache_result(
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             df = func(*args, **kwargs)
+            
+            if 'PYTEST_CURRENT_TEST' in os.environ:
+                # Skip caching in pytest
+                return df
+            
             return cache_df(df, cache_path, **cache_kwargs)
         
         wrapper.get_cached_df = lambda spark: get_cached_df(spark, cache_path)
+        wrapper.func = func
         
         return wrapper
     

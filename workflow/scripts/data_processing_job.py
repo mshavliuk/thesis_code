@@ -30,7 +30,7 @@ from pyspark.sql.types import (
 from workflow.scripts.cache_result import (
     cache_result,
 )
-from workflow.scripts.constants import get_features
+from workflow.scripts.get_features import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.spark import get_spark
 
@@ -44,24 +44,25 @@ args_hash = hashlib.md5(str(sorted(sys.argv)).encode()).hexdigest()
 
 
 class DataProcessingJob:
-    def __init__(self, data_extractor: DataExtractor, output_path: str):
-        self.data_extractor = data_extractor
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
-        self.outputs = {
-            'train_mortality_labels': f'{output_path}/train/mortality_labels.parquet',
-            'test_mortality_labels': f'{output_path}/test/mortality_labels.parquet',
-            'val_mortality_labels': f'{output_path}/val/mortality_labels.parquet',
+    @staticmethod
+    def get_outputs(output_path: str):
+        return {
+            'train_mortality_labels': f'{output_path}/train/labels.parquet',
+            'test_mortality_labels': f'{output_path}/test/labels.parquet',
+            'val_mortality_labels': f'{output_path}/val/labels.parquet',
             'train_events': f'{output_path}/train/events.parquet',
             'test_events': f'{output_path}/test/events.parquet',
             'val_events': f'{output_path}/val/events.parquet',
             'train_demographics': f'{output_path}/train/demographics.parquet',
             'test_demographics': f'{output_path}/test/demographics.parquet',
             'val_demographics': f'{output_path}/val/demographics.parquet',
-            'unittest_events': './src/util/tests/data/events.parquet',
-            'unittest_mortality_labels': './src/util/tests/data/mortality_labels.parquet',
-            'unittest_demographics': './src/util/tests/data/demographics.parquet',
         }
+    
+    def __init__(self, data_extractor: DataExtractor, output_path: str):
+        self.data_extractor = data_extractor
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+        self.outputs = self.get_outputs(output_path)
         
         out_dirs = {os.path.abspath(os.path.dirname(out)) for out in self.outputs.values()}
         
@@ -89,11 +90,10 @@ class DataProcessingJob:
             num_hours % 1) < 5 / 60:  # less than 5 min, return the last hour together with the remainder
             yield time, hour_amount * (num_hours % 1 + 1)
         else:  # more than 5 minutes, return the last hour and the remainder separately
-            yield time, hour_amount
+            yield time - pd.Timedelta(hours=(num_hours % 1)), hour_amount
             yield time, hour_amount * (num_hours % 1)
     
     def distribute_events_hourly(self, events) -> DataFrame:
-        # TODO: check if it gets faster if we split the events into smaller partitions
         # Get number of workers
         num_workers = self.data_extractor.spark.sparkContext.defaultParallelism
         events = events.repartition(num_workers).checkpoint(eager=False)
@@ -113,7 +113,6 @@ class DataProcessingJob:
         return hourly_events
     
     def convert_units(self, events):
-        # TODO: see what this returns and check if units are compatible
         return (events.withColumn(
             'value',
             F.when(F.col('unit') == 'mcg', F.col('value') * 0.001)
@@ -250,11 +249,7 @@ class DataProcessingJob:
         
         if noise_type == 'gaussian':
             std = events.groupBy('variable').agg(F.stddev('value').alias('std'))
-            # return events.withColumn(
-            #     'value',
-            #     F.when(F.rand() < p, F.col('value') * (1 + F.randn() * magnitude)).otherwise(F.col(
-            #         'value'))
-            # )
+
             return events.join(std, on='variable', how='inner').withColumn(
                 'value',
                 F.when(F.rand() < p, F.col('value') + F.randn() * F.col('std') * magnitude).otherwise(
@@ -473,16 +468,7 @@ class DataProcessingJob:
         )
         
         return events
-    
-    def generate_unittest_dataset(self):
-        demographics = self.data_extractor.spark.read.parquet(self.outputs['test_demographics'])
-        events = self.data_extractor.spark.read.parquet(self.outputs['test_events'])
-        labels = self.data_extractor.spark.read.parquet(self.outputs['test_mortality_labels'])
-        
-        stay_ids = demographics.select('stay_id').sample(0.005).cache()
-        self.save_demographic_splits(demographics, {'unittest': stay_ids})
-        self.save_event_splits(events, {'unittest': stay_ids})
-        self.save_label_splits(labels, {'unittest': stay_ids})
+
 
 
 if __name__ == '__main__':
@@ -507,7 +493,6 @@ if __name__ == '__main__':
     
     job = DataProcessingJob(data_extractor, args.output_path)
     job.run(args)
-    # job.generate_unittest_dataset()
     time_taken = time.time() - time_start
     print(f'Finished in {time_taken:.2f} seconds')
     spark.stop()

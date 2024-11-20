@@ -25,9 +25,9 @@ from src.util.variable_scalers import (
     VariableStandardScaler,
 )
 from workflow.scripts.config import Config
-from workflow.scripts.constants import get_features
 from workflow.scripts.data_extractor import DataExtractor
 from workflow.scripts.data_processing_job import DataProcessingJob
+from workflow.scripts.get_features import get_features
 from workflow.scripts.logger import get_logger
 from workflow.scripts.plotting_functions import (
     get_fig_box,
@@ -36,10 +36,13 @@ from workflow.scripts.plotting_functions import (
     plot_variable_distribution,
 )
 from workflow.scripts.spark import get_spark
-from workflow.scripts.statistics_job import StatisticsJob
 
 
 class DataPlottingJob:
+    """
+    A class to plot the distributions of the variables, the correlation matrix and the patient
+    journeys.
+    """
     outputs = {
         'distributions': f'{Config.data_dir}/plots/distributions/',
         'journeys': f'{Config.data_dir}/plots/journeys/',
@@ -47,11 +50,12 @@ class DataPlottingJob:
         'ecdfs': f'{Config.data_dir}/plots/ecdfs.pdf',
     }
     
-    def __init__(self, spark: SparkSession, output_path: str):
+    def __init__(self, spark: SparkSession, data_path: str):
         self.spark = spark
         self.data_extractor = DataExtractor(spark)
-        self.data_processing_job = DataProcessingJob(self.data_extractor, output_path)
-        self.show_plot = Config.remote_run
+        self.show_plots = Config.debugger_attached
+        self.data_processing_job_outputs = DataProcessingJob.get_outputs(data_path)
+        
         self.logger = get_logger()
         os.makedirs(f'{Config.data_dir}/plots', exist_ok=True)
     
@@ -60,23 +64,21 @@ class DataPlottingJob:
         all_events = []
         for split in splits:
             all_events.append(spark.read.parquet(
-                self.data_processing_job.outputs[f"{split}_events"]))
+                self.data_processing_job_outputs[f"{split}_events"]))
         return reduce(DataFrame.unionByName, all_events)
     
     def run(self):
-        events = self.data_processing_job.process_outliers.get_cached_df(self.spark)
+        events = self.get_all_events()
+        # FIXME: inputevents values were split hourly so the correlation is not correct
         self.plot_correlation_matrix(events)
         self.plot_data_ecdf(events, ['FiO2', 'Albumin 5%'])
-        variables_statistics = pd.read_csv(StatisticsJob.outputs['variables'])
-        events = self.get_all_events()
-        self.plot_patient_journeys(events, variables_statistics)
-        feature_events = DataProcessingJob.process_event_values.get_cached_df(self.spark)
-        feature_events = self.get_all_events()
+        
         percentiles = (0.01, 0.99)
         variables_statistics = (
-            feature_events.groupBy('variable').agg(
+            events.groupBy('variable').agg(
                 *(F.expr(f'percentile(value, {p})').alias(f'p{p}') for p in percentiles),
-            ))
+            )).cache()
+        self.plot_patient_journeys(events, variables_statistics)
         
         features = get_features()
         variables_df = self.spark.createDataFrame(
@@ -88,21 +90,21 @@ class DataPlottingJob:
         )
         
         events_to_plot = (
-            feature_events.alias('e')
+            events.alias('e')
             .join(variables_df, on='variable', how='inner')
             .join(variables_statistics.alias('s'), on='variable', how='inner')
             # filter out extreme outliers to make the plots more focused on the main distribution
             .filter(F.col('value').between(F.col('`p0.01`'), F.col('`p0.99`')))
-            .select('e.*', 'code') # WARN: randomly selected first code will be used
+            .select('e.*', 'code')  # WARN: randomly selected first code will be used
         ).checkpoint()
         
-        # self.plot_variables_distributions(events_to_plot, variables_df)
+        self.plot_variables_distributions(events_to_plot, variables_df)
         self.plot_transform_comparison(events_to_plot, variables_df, 'Bilirubin (Total)')
     
     def plot_correlation_matrix(self, events):
         daily_events: pd.DataFrame = (
             events
-            .withColumn('day', F.date_trunc('day', 'time').cast('long'))
+            .withColumn('day', (F.col('minute') / (60 * 24)).cast('long'))
             .groupBy('stay_id', 'day')
             .pivot('variable')
             .agg(F.mean('value').cast('float'))
@@ -134,9 +136,11 @@ class DataPlottingJob:
                                         vmax=ordered_corr_matrix.max().max()),
                     )
         fig.tight_layout()
-        fig.show()
         fig.savefig(self.outputs['correlation_matrix'],
                     bbox_inches=get_fig_box(fig))
+        
+        if self.show_plots:
+            fig.show()
     
     def plot_vectors(self, events):
         var = {'HR', 'MBP', "O2 Saturation", "SBP", "Temperature", "Urine"}
@@ -157,7 +161,8 @@ class DataPlottingJob:
             ax.text(i + 0.5, -.5, variable, ha='center', va='center', rotation=90, fontsize=10)
         
         fig.tight_layout()
-        fig.show()
+        if self.show_plots:
+            fig.show()
         fig.savefig(f'/tmp/events_map.pdf', bbox_inches=get_fig_box(fig))
         
         # give random ids from 1 to 129 to variables
@@ -190,13 +195,15 @@ class DataPlottingJob:
             ax.text(i + 0.5, 2.5, variable, ha='center', va='center', rotation=90, fontsize=10)
         fig.tight_layout()
         fig.savefig(f'/tmp/variables_map.svg')
+        if self.show_plots:
+            fig.show()
     
-    def plot_patient_journeys(self, events: DataFrame, variables_statistics: pd.DataFrame):
+    def plot_patient_journeys(self, events: DataFrame, variables_statistics: DataFrame):
         selected_journeys = {292741, 275225}
         removed_variables = {'GCS_eye', 'GCS_motor', 'GCS_verbal', 'Weight', 'INR', 'PT', 'PTT'}
         plot_journeys, schema = get_plot_patient_journey(
             self.outputs['journeys'],
-            variables_statistics,
+            variables_statistics.toPandas(),
         )
         
         plots = (events
@@ -215,7 +222,6 @@ class DataPlottingJob:
     ):
         plot_dists, schema = get_plot_variables_distribution(self.outputs['distributions'])
         
-        # events_sample = sample_events(events_to_plot, 10000)
         plots = (events.groupBy('variable')
                  .cogroup(variables_df.groupBy('variable'))
                  .applyInPandas(plot_dists, schema=schema)).cache()
@@ -264,7 +270,9 @@ class DataPlottingJob:
         fig.tight_layout()
         file_name = 'transforms_' + re.sub(r"[^a-zA-Z0-9]", "_", variable) + ".pdf"
         fig.savefig(f'{self.outputs['distributions']}/{file_name}', bbox_inches=get_fig_box(fig))
-        fig.show()
+        
+        if self.show_plots:
+            fig.show()
     
     def plot_data_ecdf(self, events: DataFrame, variables: list[str]):
         df = events \
@@ -287,16 +295,23 @@ class DataPlottingJob:
             ax.set_ylabel(r'$P(X \leq x)$')
             ax.set_title(f'ECDF function for {variable}')
         fig.tight_layout()
-        fig.show()
         fig.savefig(self.outputs['ecdfs'],
                     bbox_inches=get_fig_box(fig))
+        
+        if self.show_plots:
+            fig.show()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--output-path', type=str, required=True, help='Path to output directory')
+    parser = argparse.ArgumentParser(
+        description='Plot the distributions of the variables, the '
+                    'correlation matrix and the patient journeys.'
+    )
+    parser.add_argument(
+        '--dataset-path', type=str, required=True,
+        help='Path to a processed dataset directory, e.g. output of data_processing_job.py')
     args = parser.parse_args()
     spark = get_spark("Plotting Job")
-    job = DataPlottingJob(spark, args.output_path)
+    job = DataPlottingJob(spark, args.dataset_path)
     job.run()
     spark.stop()
