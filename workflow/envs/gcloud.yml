@@ -1,4 +1,4 @@
 name: gcloud
 dependencies:
   - python=3.11.*
-  - conda-forge::google-cloud-sdk
+  - conda-forge::google-cloud-sdk=502.*

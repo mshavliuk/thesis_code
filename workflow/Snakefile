@@ -21,7 +21,7 @@ configfile: "workflow/config.yaml"
 
 rule all:
     input:
-        lambda _: checkpoints.finetune_all.get().output,
+        get_finetune_all_dependent_paths,
 
 
 rule download_data:
@@ -31,11 +31,12 @@ rule download_data:
         temp(f"{data_dir}/raw/{{file}}.csv.gz"),
     log:
         "logs/download_data/{file}.log",
-    # params:
-    #     google_project_id=os.environ["GOOGLE_PROJECT_ID"],
-    # -u {params.google_project_id}
     shell:
-        "gsutil -u $(gcloud config get-value project) cp gs://mimiciii-1.4.physionet.org/{wildcards.file}.csv.gz {output} > {log} 2> {log}"
+        """
+        gsutil -u $(gcloud config get-value project) cp \
+        gs://mimiciii-1.4.physionet.org/{wildcards.file}.csv.gz {output} \
+        > {log} 2> {log}
+        """
 
 
 rule convert_data_to_parquet:
@@ -118,11 +119,9 @@ rule pretrain:
         gpu=1,
     shell:
         """
-        python src/pretrain.py --config {input.config} > {log} 2> {log}
-        
-        if [ $? -eq 0 ]; then
-            touch {output}
-        fi
+        python src/pretrain.py --config {input.config} \
+            > {log} 2> {log} \
+            && touch {output}
         """
 
 
@@ -145,7 +144,7 @@ checkpoint test_pretrain:
         gpu=1,
         runtime='2h',
     shell:
-        "python src/run_tests.py --config {input.config} > {log} 2> {log} && touch {output}"
+        "python src/pretrain_test.py --config {input.config} > {log} 2> {log} && touch {output}"
 
 
 rule finetune:
@@ -167,11 +166,9 @@ rule finetune:
         runtime=lambda wc: f"{float(wc.fraction) * 3 * config['number_of_folds']}h",
     shell:
         """
-        python src/finetune.py --config {input.config} -n {params.n} -f {wildcards.fraction} > {log} 2> {log}
-        
-        if [ $? -eq 0 ]; then
-            touch {output}
-        fi
+        python src/finetune.py --config {input.config} -n {params.n} -f {wildcards.fraction} \
+            > {log} 2> {log} \
+            && touch {output}
         """
 
 
@@ -181,13 +178,9 @@ rule finetune_config:
         get_finetune_config_dependent_paths,
     output:
         "results/finetune_config/{file}.SUCCESS",
+    shell:
+        "touch {output}"
 
-
-checkpoint finetune_all:
-    input:
-        get_finetune_all_dependent_paths,
-    output:
-        "results/finetune_all.SUCCESS",
 
 
 

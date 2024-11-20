@@ -36,7 +36,7 @@ class ModuleConfig(BaseModel, extra='forbid'):
 
 
 class PretrainingModuleConfig(ModuleConfig, extra='forbid'):
-    loss: str
+    pass
 
 
 class FinetuneModuleConfig(ModuleConfig, extra='forbid'):

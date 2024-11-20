@@ -29,6 +29,7 @@ This repository contains the source code for the master's thesis. The full thesi
     conda env create -f workflow/envs/gcloud.yml -n gcloud
     conda activate gcloud
     gcloud auth login
+    gcloud config set project $(gcloud projects list --format="value(projectId)" --limit=1)
     conda deactivate
     
     conda env create -f environment.yml -n ecdf_thesis
@@ -39,7 +40,7 @@ This repository contains the source code for the master's thesis. The full thesi
       PYTHONPATH=$(pwd) \
       DATA_DIR=$(pwd)/data \
       WANDB_PROJECT=ECDF-thesis \
-      TEMP_DIR=/tmp/ecdf_thesis \
+      TEMP_DIR=$(pwd)/temp \
       SNAKEMAKE_PROFILE=$(pwd)/workflow/profiles/workstation \
       -n ecdf_thesis
 
@@ -111,7 +112,7 @@ To download the dataset via Google Cloud:
 Set the following environment variables to ensure proper functionality:
 
 - `PYTHONPATH`: Include the root project directory.
-- `TEMP_DIR`: Path for temporary files (e.g., `/tmp/ecdf_thesis`).
+- `TEMP_DIR`: Path for temporary files, has to lead to **existing** directory (e.g., `$(pwd)/temp`).
 - `DATA_DIR`: Path for datasets and plots.
 
 On clusters with restricted filesystem access, you may also need to set:
@@ -123,13 +124,13 @@ On clusters with restricted filesystem access, you may also need to set:
 To persist these variables in the current Conda environment:
 
 ```bash
-mkdir /tmp/ecdf_thesis
+mkdir temp
 
 conda env config vars set \
   PYTHONPATH=$(pwd) \
   DATA_DIR=$(pwd)/data \
   WANDB_PROJECT=ECDF-thesis \
-  TEMP_DIR=/tmp/ecdf_thesis
+  TEMP_DIR=$(pwd)/temp
 
 # reactivate the environment for changes to take effect
 conda deactivate
@@ -202,12 +203,13 @@ workflow/tests/test_data_processing_job.py .........                            
 
 ### Steps to Run
 
-1. Download the MIMIC-III dataset from Google Cloud.
-2. Convert `.csv.gz` files to `.parquet`.
-3. Preprocess the datasets.
+1. Download the MIMIC-III dataset from Google Cloud and store temporarily.
+2. Convert downloaded `.csv.gz` files to `.parquet`.
+3. Preprocess data to generate datasets with different noise levels (listed in [`config.yaml`](workflow/config.yaml)).
 4. Pretrain the model.
-5. Compute test metrics and select the best model.
+5. Compute test metrics for pretrained models and mark the best ones for finetuning.
 6. Fine-tune the model.
+7. Analyze the results
 
 Adjust the number of cross-validation folds and data fractions in [`config.yaml`](workflow/config.yaml).
 
@@ -215,15 +217,15 @@ Adjust the number of cross-validation folds and data fractions in [`config.yaml`
 
 ### With Snakemake
 
-Snakemake automates the entire experiment pipeline. To reproduce the experiments, simply run:
+Snakemake automates the entire experiment pipeline (except the analysis). To reproduce the experiments, simply run:
 
 ```bash
 snakemake
 ```
 
-The computation may take several days, depending on hardware. Alternatively, you can run specific experiments:
+The computation may take several days, depending on hardware.
 
-For example, to execute all jobs for the ECDF experiments:
+Alternatively, you can run specific experiments. For example, to execute all jobs for the ECDF experiments:
 
 ```bash
 snakemake results/finetune_config/ecdf.SUCCESS

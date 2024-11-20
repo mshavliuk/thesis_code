@@ -98,7 +98,9 @@ def parse_yaml_config_with_includes(file_path: Path, _top_level=True) -> dict:
         tags = loader.parse_implicit_document_start().tags or {}
         loader.dispose()
     
-    if unknown_tags := set(tags.keys()) - {'!include!', '!depends-on!'}:
+    if unknown_tags := set(tags.keys()) - {
+        '!include!', '!depends-on!', '!dataset!', '!data-fractions!'
+    }:
         warnings.warn(f"Unknown tags {unknown_tags} in {file_path}")
     
     if (include_path := tags.get('!include!')) is not None:
