@@ -70,6 +70,15 @@ conda activate ecdf_thesis
 wandb login
 ```
 
+### Alternative: explicit install
+
+Perhaps, less developer-friendly, but more reproducible approach to install project dependencies is to try to obtain the exact versions that were installed during the project development (ignoring all patch-level updates). It's generally not recommended to use this approach unless the first one breaks.
+
+```bash
+conda create -f environment.txt -n ecdf_thesis
+conda activate ecdf_thesis
+pip install -r requirements.txt
+```
 
 ---
 

@@ -58,6 +58,7 @@ wandb_logger: {}
 
 trainer:
   gradient_clip_val: 0.3
+  max_epochs: -1
 
 
 

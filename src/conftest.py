@@ -35,7 +35,7 @@ def data_path(request):
             'Run `snakemake generate_unittest_dataset` for generating the test data.',
             file=sys.stderr
         )
-        pytest.skip('No unit test data available. Please provide the --data-path option.')
+        pytest.skip('No unit test data available.')
     
     return path
 

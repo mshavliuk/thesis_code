@@ -54,8 +54,8 @@ def rerun_finetune_tests(runs: list[wandb.apis.public.Run], config: FinetuneConf
     logger = logging.getLogger(__name__)
     
     data = create_data_module(config, logger, data_checkpoint)
-    risk_dist_path = Path(os.environ['DATA_DIR'] + '/plots/risk_score_distributions/').resolve()
-    risk_dist_path.mkdir(parents=True, exist_ok=True)
+    # risk_dist_path = Path(os.environ['DATA_DIR'] + '/plots/risk_score_distributions/').resolve()
+    # risk_dist_path.mkdir(parents=True, exist_ok=True)
     # curves_callback = CurvesLoggerCallback(os.environ['DATA_DIR'] + '/plots/curves/')
     # config.trainer['callbacks'] = [curves_callback]
     trainer = create_trainer(config)
@@ -112,10 +112,6 @@ def rerun_finetune_tests(runs: list[wandb.apis.public.Run], config: FinetuneConf
             'weighted_test_loss': weighted_loss,
             'test_loss': test_loss,
         })
-
-
-def compute_finetune_losses(data_loader, model, scalers, trainer):
-    ...
 
 
 def compute_pretrain_losses(data_loader, model, scalers, trainer):

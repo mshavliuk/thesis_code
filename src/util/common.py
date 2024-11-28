@@ -38,13 +38,12 @@ def create_data_module(
     if checkpoint is None:
         kwargs |= {'data_config': config.data_config}
         data = MIMICIIIDataModule(**kwargs)
-    elif config.stage=='finetune':
+    elif config.stage == 'finetune':
         kwargs |= {'new_config': config.data_config}
         data = MIMICIIIDataModule.load_from_checkpoint(checkpoint, **kwargs)
     else:
         kwargs |= {'data_config': config.data_config}
         data = MIMICIIIDataModule.load_from_checkpoint(checkpoint, **kwargs)
-
     return data
 
 
@@ -128,7 +127,7 @@ def create_trainer(
         kwargs['enable_progress_bar'] = False
     
     # Set accelerator based on CUDA availability
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and not "accelerator" in config.trainer:
         kwargs['accelerator'] = 'gpu'
         
         # Set precision based on GPU support
