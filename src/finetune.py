@@ -3,10 +3,12 @@ import io
 import logging
 from typing import Sequence
 
+import numpy as np
 import torch
 import wandb
 
 from src.lightning_module import FinetuneModule
+from src.models import StratsOurs
 from src.util.common import (
     create_data_module,
     create_model_module,
@@ -38,18 +40,66 @@ def finetune(
         raise FileNotFoundError("Model checkpoint not found")
     
     model = create_model_module(config, logger, data, model_checkpoint)
+    model = model.to('cuda')
     
-    initial_state = copy_state(model)
+    values = torch.randn(16, 140, device='cuda')
+    values = torch.quantize_per_tensor(values, 1 / 128, 128, torch.quint8)
+    model.model.cve_value(values)
     
-    if not args.debug and not args.watch and not args.dry_run:
-        model.compile(fullgraph=True, dynamic=True)
+    values = torch.randint(0, 256, (16, 140), dtype=torch.uint8, device='cuda')
+    values = torch._make_per_tensor_quantized_tensor(values, 1 / 128, 128)
+    model.model.cve_value(values)
+    
+    # same from numpy
+    values = torch.zeros(
+        (16, 140),
+        dtype=torch.uint8,
+        pin_memory=True,
+    )
+    values.numpy()[:] = np.random.randint(0, 256, (16, 140), dtype=np.uint8)
+    values = torch._make_per_tensor_quantized_tensor(values, 1 / 128, 128)
+    model.model.cve_value(values)
+    batch = next(iter(data.val_dataloader()))
+    model.model.cve_value(batch['values'])
+    exit()
+    
+
+    # strats: StratsOurs = model.model
+    # ffn = torch.nn.Sequential(
+    #     torch.ao.nn.quantized.DeQuantize(),
+    #     *strats.cve_value.fnn,
+    # )
+    # strats.cve_value.fnn = ffn
+    # strats.cve_value.forward = torch._dynamo.disable(strats.cve_value.forward)
+    # modules = [new_module] + list(model)
+    # model = nn.Sequential(*modules)
+    # torch.quantization.prepare_qat(ffn, inplace=True)
+    # ffn.eval()
+    # for batch in data.train_dataloader():
+    #     ffn(batch['values'].dequantize())
+    #
+    # ffn = torch.quantization.convert(ffn, inplace=False)
+    # # lin = strats.cve_value.ffn[0]
+    # # lin.weight.data /= 256
+    #
+    
+    from torch.ao.quantization import quantize_dynamic
+    # torch.quantization.quantize_dynamic(lin, dtype=torch.qint8, inplace=True)
+    
+    # initial_state = copy_state(model)
+    # write initial state to file
+    torch.save(model.state_dict(), 'initial_state.pth')
+    
+    # if not args.debug and not args.watch and not args.dry_run:
+    #     model.compile(fullgraph=False, dynamic=True)
     
     for data_fraction in args.data_fraction:
         with data.folds(args.folds_number, data_fraction) as folds:
             for fold in folds:
                 logger.info(f"Starting fold {fold}...")
                 try:
-                    model.load_state_dict(initial_state, strict=True)
+                    # model.load_state_dict(initial_state, strict=True)
+                    model.load_state_dict(torch.load('initial_state.pth', weights_only=False), strict=True)
                     torch.cuda.synchronize()
                     finetune_fold(args, config, fold, data, model, [model_artifact, data_artifact])
                 except Exception:
@@ -97,6 +147,8 @@ def copy_state(model: torch.nn.Module) -> dict:
         elif isinstance(v, io.BytesIO):
             v.seek(0)
             state_copy[k] = torch.load(v)
+        elif isinstance(v, (torch.dtype, tuple)):
+            state_copy[k] = v
         else:
             raise ValueError(f"Unknown state_dict value type: {type(v)}")
     return state_copy

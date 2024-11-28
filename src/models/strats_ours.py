@@ -9,14 +9,23 @@ from .configs import (
 
 
 class CVE(nn.Module):
-    def __init__(self, hid_dim: int):
+    def __init__(self, hid_dim: int, quantized: bool = False):
         super().__init__()
         int_dim = int(np.sqrt(hid_dim))
-        self.fnn = nn.Sequential(
-            nn.Linear(1, int_dim),
-            nn.Tanh(),
-            nn.Linear(int_dim, hid_dim, bias=False)
-        )
+        if quantized:
+            # self.qconfig = torch.quantization.get_default_qconfig('x86')
+            self.fnn = nn.Sequential(
+                torch.ao.nn.quantized.DeQuantize(),
+                nn.Linear(1, int_dim),
+                nn.Tanh(),
+                nn.Linear(int_dim, hid_dim, bias=False),
+            )
+        else:
+            self.fnn = nn.Sequential(
+                nn.Linear(1, int_dim),
+                nn.Tanh(),
+                nn.Linear(int_dim, hid_dim, bias=False),
+            )
     
     def forward(self, x):
         # x: bsz, max_len
@@ -160,7 +169,7 @@ class StratsOurs(nn.Module):
         super().__init__()
         
         self.cve_time = CVE(config.hid_dim)
-        self.cve_value = CVE(config.hid_dim)
+        self.cve_value = CVE(config.hid_dim, quantized=config.quantized)
         self.variable_emb = nn.Embedding(
             features_info.features_num + 1,
             config.hid_dim,

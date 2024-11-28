@@ -10,7 +10,7 @@ class TestCollator:
     
     @pytest.fixture(scope='function')
     def collator(self):
-        return Collator(padding_value=self.padding_value)
+        return Collator(padding_variable_value=self.padding_value)
     
     @pytest.fixture(scope='function')
     def batch(self):

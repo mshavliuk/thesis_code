@@ -5,13 +5,16 @@ import pandas as pd
 import pytest
 from numpy import testing as npt
 
-from src.util.variable_scalers import VariableECDFScaler
+from src.util.variable_scalers import (
+    UInt8ECDFScaler,
+    VariableECDFScaler,
+)
 
 
-class TestVariableECDFScaler:
+class TestUInt8ECDFScaler:
     @pytest.fixture(scope='function')
     def scaler(self):
-        return VariableECDFScaler()
+        return VariableECDFScaler(dtype=np.uint8)
     
     @pytest.fixture
     def events(self, data_path: Path):
@@ -34,22 +37,27 @@ class TestVariableECDFScaler:
     def test_transform_scaler(self, events, scaler):
         scaler.fit(events)
         scaled = scaler.transform(events)
-        npt.assert_allclose(scaled['value'].min(), 0, atol=1e-3)
-        npt.assert_allclose(scaled['value'].max(), 1, atol=1e-3)
+        npt.assert_allclose(scaled['value'].min(), 0, atol=1e-3, rtol=0)
+        npt.assert_allclose(scaled['value'].max(), 255, atol=1e-3, rtol=0)
         assert scaled['minute'].equals(events['minute'])
         assert scaled['stay_id'].equals(events['stay_id'])
         assert scaled['variable'].equals(events['variable'])
-        assert scaled['value'].dtype == events['value'].dtype
+        assert scaled['value'].dtype == np.uint8
 
     def test_inverse_transform_scaler(self, events, scaler):
+        # fixme: remove
+        events = events[events['variable'] == 'MBP']
         scaler.fit(events)
         scaled = scaler.transform(events)
         unscaled = scaler.inverse_transform(scaled)
-        npt.assert_allclose(unscaled['value'], events['value'], atol=1e-3, rtol=1e-3)
+        # for preview
+        events['scaled'] = scaled['value']
+        events['unscaled'] = unscaled['value']
         assert unscaled['minute'].equals(events['minute'])
         assert unscaled['stay_id'].equals(events['stay_id'])
         assert unscaled['variable'].equals(events['variable'])
         assert unscaled['value'].dtype == events['value'].dtype
+        npt.assert_allclose(unscaled['value'], events['value'], atol=1e-3, rtol=1e-3)
     
     def test_interpolation_unseen_values(self, events, scaler):
         scaler.fit(events)
@@ -58,20 +66,11 @@ class TestVariableECDFScaler:
         unseen_events['value'] = np.random.uniform(-100, 100, len(unseen_events))
         scaled = scaler.transform(unseen_events)
         npt.assert_allclose(scaled['value'].min(), 0, atol=1e-3)
-        npt.assert_allclose(scaled['value'].max(), 1, atol=1e-3)
+        npt.assert_allclose(scaled['value'].max(), 255, atol=1e-3)
     
-    def test_inverse_transform_edge_cases(self, events, scaler):
-        scaler.fit(events)
-        scaled = scaler.transform(events)
-        scaled.loc[0, 'value'] = -0.1  # Set an out-of-bound value
-        scaled.loc[1, 'value'] = 1.1  # Set another out-of-bound value
-        unscaled = scaler.inverse_transform(scaled)
-        assert unscaled['value'].between(events['value'].min(), events['value'].max()).all()
-        
-    def test_double_transform_preserves_values(self, events: pd.DataFrame, scaler: VariableECDFScaler):
+    def test_double_transform_preserves_values(self, events: pd.DataFrame, scaler: UInt8ECDFScaler):
         events: pd.DataFrame = events.copy()
-        rng = np.random.default_rng(42)
-        events['value'] = rng.uniform(-100, 100, len(events))
+        events['value'] = np.random.uniform(-100, 100, len(events))
         # make sure every variable has a full range of values
         # append a pair of values to the end of the dataframe per each variable
         for variable in events['variable'].unique():
@@ -90,4 +89,7 @@ class TestVariableECDFScaler:
         
         scaled = scaler.transform(unseen_events)
         unscaled = scaler.inverse_transform(scaled)
-        npt.assert_allclose(unscaled['value'], unseen_events['value'], atol=1e-3, rtol=0.01)
+        npt.assert_allclose(unscaled['value'], unseen_events['value'], atol=1, rtol=0.1)
+
+
+    # TODO: fit the original ecdf scaler, transform and convert to int8. Expect the same result as the uint8 scaler

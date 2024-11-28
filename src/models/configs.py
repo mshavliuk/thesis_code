@@ -5,6 +5,7 @@ from pydantic import (
 
 
 class StratsConfig(BaseModel):
+    quantized: bool = False
     hid_dim: int = Field(..., gt=0)
     num_layers: int = Field(..., gt=0)
     num_heads: int = Field(..., gt=0)

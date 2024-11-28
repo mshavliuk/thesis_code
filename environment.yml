@@ -7,14 +7,14 @@ channels:
   - defaults
 dependencies:
   - cudnn=9.3.*
-  - cuda=12.1.*
+  - cuda=12.4.*
   - gcc=14.2.* # for compiling torch models
   - openjdk=11.* # for spark
   - pip=24.2.*
   - pyspark=3.5.* # potentially incompatible with numpy 2
   - python=3.12.*
-  - pytorch-cuda=12.1.*
-  - pytorch::pytorch=2.4.*
+  - pytorch-cuda=12.4.*
+  - pytorch::pytorch=2.5.*
   - snakemake=8.24.*
   - pip:
     - dpath==2.2.*

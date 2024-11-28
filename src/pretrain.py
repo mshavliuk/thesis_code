@@ -1,8 +1,10 @@
 import argparse
 import logging
 
+import torch
 import wandb
 
+from src.models import StratsOurs
 from src.util.common import (
     create_data_module,
     create_model_module,
@@ -17,6 +19,7 @@ from src.util.config import (
 from src.util.wandb import (
     DATA_MODULE,
     create_data_module_artifact,
+    create_model_artifact,
     find_checkpoint,
 )
 
@@ -56,6 +59,7 @@ def pretrain(args: argparse.Namespace, config: PretrainConfig, logger: logging.L
             job_type=DATA_MODULE,
         ):
             checkpoint, data_artifact = create_data_module_artifact(config, data)
+
     for i in range(args.runs_number):
         try:
             wandb_logger = create_wandb_logger(
@@ -67,16 +71,33 @@ def pretrain(args: argparse.Namespace, config: PretrainConfig, logger: logging.L
             with wandb_logger.experiment:
                 # everything logged inside this block will be logged to wandb
                 model = create_model_module(config, logger, data)
-                
+                #
+                #
+                # strats: StratsOurs = model.model
+                # strats.cve_value.fnn = torch.nn.Sequential(
+                #     # torch.ao.nn.quantized.Quantize(1 / 256, 128, torch.quint8),
+                #     *strats.cve_value.fnn,
+                #     torch.ao.quantization.DeQuantStub(),
+                # )
+                #
+                # # FIXME: _qat_ part is important!
+                # # strats.cve_value.qconfig = torch.quantization.get_default_qat_qconfig('x86')
+                # torch.quantization.prepare_qat(model, inplace=True)
+                # strats.cve_value.forward = torch._dynamo.disable(strats.cve_value.forward)
+                #
                 if args.watch:
                     wandb_logger.watch(model, log='all')
                 
                 if not args.debug and not args.watch and not args.dry_run:
-                    model.compile(fullgraph=True, dynamic=True, mode="reduce-overhead")
+                    model.compile(fullgraph=False, dynamic=True, mode="reduce-overhead")
                 
                 trainer = create_trainer(config, args, wandb_logger)
                 
                 trainer.fit(model=model, datamodule=data)
+                
+                model = torch.quantization.convert(model)
+                create_model_artifact(config, model)
+                
                 
         except Exception:
             logger.exception(f"Error in fold {i + 1}")

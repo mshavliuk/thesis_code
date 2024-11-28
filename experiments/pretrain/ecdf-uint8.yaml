@@ -1,0 +1,35 @@
+%TAG !include! ./ecdf.yaml
+%TAG !dataset! original_strats_data
+---
+
+description: "Pretrain the model with ECDF scaler in uint8"
+
+data_module_checkpoint: ecdf-uint8_data_module:latest
+
+
+module_config:
+  model:
+    quantized: true
+
+__common_dataset__: &common_dataset
+  scaler_class: 'UInt8ECDFScaler'
+
+data_config:
+  train:
+    dataset:
+      <<: *common_dataset
+
+  val:
+    dataset:
+      <<: *common_dataset
+
+  test:
+    dataset:
+      <<: *common_dataset
+
+trainer:
+#  precision: 32
+  max_epochs: 1
+
+wandb_logger:
+  log_model: false

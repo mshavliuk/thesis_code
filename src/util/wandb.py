@@ -11,6 +11,7 @@ import wandb
 import yaml
 from lightning.fabric.plugins import TorchCheckpointIO
 
+from src.lightning_module import AbstractModule
 from src.util.config import MainConfig
 from src.util.data_module import MIMICIIIDataModule
 
@@ -48,6 +49,26 @@ def get_checkpoint_from_artifacts(artifact: wandb.Artifact):
     
     checkpoint = artifact.get_entry(entry_name).download()
     return checkpoint
+
+
+def create_model_artifact(config: MainConfig, module: AbstractModule):
+    model_artifact = wandb.Artifact(
+        name=f"{config.name}_{config.stage}",
+        # has to be 'model' to match wandb logger implementation, see lightning/pytorch/loggers/wandb.py:671
+        type="model",
+        metadata=config.module_config.model_dump(mode='json'),
+    )
+    checkpoint = {
+        "pytorch-lightning_version": L.__version__,
+        'hyper_parameters': module.hparams,
+        'state_dict': module.state_dict(),
+    }
+    io = TorchCheckpointIO()
+    with model_artifact.new_file(name='model.ckpt', mode='wb') as f:
+        io.save_checkpoint(checkpoint, f.name)
+    model_artifact.save()
+    model_artifact.wait()
+    return checkpoint, model_artifact
 
 
 def create_data_module_artifact(config: MainConfig, data: MIMICIIIDataModule):

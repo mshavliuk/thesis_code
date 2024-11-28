@@ -28,7 +28,11 @@ from src.util.variable_scalers import (
     TimeScaler,
 )
 
-SUPPORTED_SCALERS = scaler_module.VariableStandardScaler.__name__, scaler_module.VariableECDFScaler.__name__
+SUPPORTED_SCALERS = (
+    scaler_module.VariableStandardScaler.__name__,
+    scaler_module.VariableECDFScaler.__name__,
+    scaler_module.UInt8ECDFScaler.__name__,
+)
 
 
 class DatasetConfig(BaseModel, extra='forbid'):
@@ -203,7 +207,7 @@ class PretrainDataset(AbstractDataset):
             self.demographic_scaler = DemographicScaler()
             self.demographic_scaler.fit(demographics)
         
-        events = self.variable_scaler.transform(events).astype({'value': 'float32'})
+        events = self.variable_scaler.transform(events)
         events['variable'] = events['variable'].cat.codes.astype('int32')
         events.sort_values('minute', inplace=True)
         
@@ -299,8 +303,9 @@ class PretrainDataset(AbstractDataset):
         
         t2 = t1 + self.config.prediction_window
         forecast_values, forecast_mask = self._get_forecast_data(
-            sample['minute'], sample['variable'], sample['value'], t1, t2
+            sample['minute'], sample['variable'], sample['value'].astype(np.float32), t1, t2
         )
+        forecast_values /= 256
         
         if (num_samples := len(values)) <= self.max_events:
             return {
@@ -344,7 +349,7 @@ class FinetuneDataset(AbstractDataset):
             .astype({'variable': variables_type}) \
             .set_index('stay_id')
         
-        events = self.variable_scaler.transform(events).astype({'value': 'float32'})
+        events = self.variable_scaler.transform(events)
         events['variable'] = events['variable'].cat.codes.astype('int32')
         events.sort_values('minute', inplace=True)
         

@@ -2,6 +2,8 @@ import contextlib
 import logging
 import re
 from typing import (
+    Any,
+    Dict,
     Iterable,
     Sized,
 )
@@ -175,7 +177,14 @@ class FinetuneModule(AbstractModule):
         self.reported_logs = set()
         
         self.model = self.build_model(module_config, features_info)
+        if module_config.model.quantized:
+            self.model = torch.quantization.prepare(self.model)
+            self.model.cve_value.eval()
+            self.model = torch.quantization.convert(self.model)
+            # disable training of the quantized model
+            self.model.cve_value.forward = torch._dynamo.disable(self.model.cve_value.forward)
     
+
     def on_train_start(self) -> None:
         if self.wandb_logger is not None:
             p = self._get_pos_class_frac(self.trainer.train_dataloader)
@@ -290,7 +299,7 @@ class FinetuneModule(AbstractModule):
     @contextlib.contextmanager
     def with_unweighted_loss(self):
         if self.criterion.weight is None or self.criterion.weight == 1:
-            yield # already unweighted
+            yield  # already unweighted
         else:
             previous_criterion = self.criterion
             try:
