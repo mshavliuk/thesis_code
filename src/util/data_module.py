@@ -47,7 +47,12 @@ class SplitConfig(BaseModel, extra='forbid'):
     dataset: PretrainDatasetConfig
 
 
+class CollatorConfig(BaseModel, extra='forbid'):
+    noop: bool = False
+
+
 class DataModuleConfig(BaseModel, extra='forbid'):
+    collator: CollatorConfig
     train: SplitConfig
     val: SplitConfig
     test: SplitConfig
@@ -59,6 +64,7 @@ class FinetuneSplitConfig(BaseModel, extra='forbid'):
 
 
 class FinetuneDataModuleConfig(BaseModel, extra='forbid'):
+    collator: CollatorConfig | None = None
     train: FinetuneSplitConfig
     val: FinetuneSplitConfig
     test: FinetuneSplitConfig
@@ -86,7 +92,6 @@ class PersistentGPUDataLoader(DataLoader):
 
 class MIMICIIIDataModule(L.LightningDataModule):
     
-    
     def __init__(
         self,
         stage: Literal['pretrain', 'finetune'],
@@ -113,10 +118,14 @@ class MIMICIIIDataModule(L.LightningDataModule):
             if new_config is None:
                 raise ValueError("New data_config has to be provided for finetune stage")
             
-            for split_name, split_config in data_config.model_dump().items():
+            # if new config does not have split dataset configs, copy them from the old config
+            for split_name, split_config in data_config.model_dump(include={'train', 'test', 'val'}).items():
                 new_split_config = getattr(new_config, split_name)
                 if new_split_config.dataset is None:
                     new_split_config.dataset = FinetuneDatasetConfig(**split_config['dataset'])
+                
+            if new_config.collator is None:
+                new_config.collator = CollatorConfig(**data_config.collator.model_dump())
             
             data_config = new_config
             dataset_class = FinetuneDataset
@@ -137,7 +146,7 @@ class MIMICIIIDataModule(L.LightningDataModule):
         self.val_dataset = self._orig_val_dataset
         self.test_dataset = self._orig_test_dataset
         
-        self.collator = Collator(self.train_dataset.num_variables)
+        self.collator = Collator(self.train_dataset.num_variables, noop=data_config.collator.noop)
     
     def prepare_data(self):
         pass

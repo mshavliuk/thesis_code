@@ -1,0 +1,27 @@
+%TAG !include! ./ecdf.yaml
+%TAG !dataset! original_strats_data
+---
+
+description: "Pretrain the model with ECDF scaler and noop token"
+
+
+data_module_checkpoint: ecdf-noop_data_module:latest
+
+__common_dataset__: &common_dataset
+    max_events: 879 # 1 extra space for noop token
+
+data_config:
+  collator:
+    noop: true
+
+  train:
+    dataset:
+      <<: *common_dataset
+
+  val:
+    dataset:
+      <<: *common_dataset
+
+  test:
+    dataset:
+      <<: *common_dataset

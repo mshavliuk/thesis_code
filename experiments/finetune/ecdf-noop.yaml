@@ -1,0 +1,26 @@
+%TAG !include! ./ecdf.yaml
+%TAG !depends-on! ../pretrain/ecdf-noop.yaml
+---
+
+description: "Finetune the model with ECDF scaler and noop token"
+
+
+#__common_dataset__: &common_dataset
+#  max_events: 879 # 1 extra space for noop token
+
+
+#data_config:
+#  collator:
+#    noop: true
+
+#  train:
+#    dataset:
+#      max_events: 879
+#
+#  val:
+#    dataset:
+#      max_events: 879
+#
+#  test:
+#    dataset:
+#      max_events: 879

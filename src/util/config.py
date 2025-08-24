@@ -116,12 +116,7 @@ def parse_yaml_config_with_includes(file_path: Path, _top_level=True) -> dict:
     if _top_level and ((depends_on_path := tags.get('!depends-on!')) is not None):
         depends_on_dict = parse_yaml_config_with_includes(
             Path(file_path.parent, depends_on_path).resolve(), _top_level=False)
-        
-        #   max_events: 880
-        #   max_minute: 1440 # 24 * 60
-        #   scaler_class: 'VariableStandardScaler'
-        #   select_top: 128
-        # dataset_config = dpath.search(depends_on_dict, 'data_config/*/dataset/path')
+
         dataset_config = dpath.search(depends_on_dict, 'data_module_checkpoint')
         
         content_dict = dpath.merge(dataset_config, content_dict)

@@ -129,6 +129,9 @@ On clusters with restricted filesystem access, you may also need to set:
 - `MPLCONFIGDIR`: `/tmp/ecdf_thesis/matplotlib`
 - `SNAKEMAKE_OUTPUT_CACHE`: `/tmp/ecdf_thesis/snakemake-cache`
 - `XDG_CACHE_HOME`: `/tmp/ecdf_thesis/xdg_cache`
+- `WANDB_CACHE_DIR`: `/tmp/ecdf_thesis/wandb_cache`
+
+conda env config vars set WANDB_CACHE_DIR=/scratch/srmish/wandb_cache
 
 To persist these variables in the current Conda environment:
 
